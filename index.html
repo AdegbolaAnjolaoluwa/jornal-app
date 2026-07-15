@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Say So</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        background: #1a1a1a;
+        color: #ffffff;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      /* Auth Screen */
+      .auth-screen {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+      }
+
+      .auth-card {
+        background: #242424;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 40px;
+        width: 100%;
+        max-width: 400px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      .auth-header {
+        text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .auth-header h1 {
+        font-size: 32px;
+        color: #F4D03F;
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+
+      .auth-header p {
+        color: #999;
+        font-size: 14px;
+      }
+
+      .auth-tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #333;
+      }
+
+      .auth-tab {
+        flex: 1;
+        padding: 12px;
+        text-align: center;
+        color: #666;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        font-weight: 500;
+        transition: all 0.3s;
+      }
+
+      .auth-tab.active {
+        color: #F4D03F;
+        border-bottom-color: #F4D03F;
+      }
+
+      .auth-form {
+        display: none;
+      }
+
+      .auth-form.active {
+        display: block;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: #ccc;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 12px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 6px;
+        color: #fff;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: #F4D03F;
+        box-shadow: 0 0 0 3px rgba(244, 208, 63, 0.1);
+      }
+
+      .form-error {
+        color: #ff6b6b;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+
+      .btn {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-primary {
+        background: #F4D03F;
+        color: #000;
+      }
+
+      .btn-primary:hover {
+        background: #f4d63f;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 20px rgba(244, 208, 63, 0.3);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* App Screen */
+      .app-screen {
+        display: none;
+        min-height: 100vh;
+        background: #1a1a1a;
+      }
+
+      .app-screen.active {
+        display: block;
+      }
+
+      .header {
+        background: #242424;
+        border-bottom: 1px solid #333;
+        padding: 16px 0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 20px;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+
+      .header h1 {
+        font-size: 24px;
+        color: #F4D03F;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .user-email {
+        color: #999;
+        font-size: 14px;
+      }
+
+      .btn-logout {
+        background: #333;
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 4px;
+        border: 1px solid #444;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .btn-logout:hover {
+        background: #444;
+      }
+
+      .main-content {
+        padding: 40px 20px;
+      }
+
+      /* Entry Form */
+      .entry-form {
+        background: #242424;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 40px;
+      }
+
+      .entry-form h2 {
+        font-size: 18px;
+        margin-bottom: 24px;
+        color: #F4D03F;
+      }
+
+      .input-tabs {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .input-tab {
+        padding: 8px 16px;
+        border: 1px solid #444;
+        background: #1a1a1a;
+        color: #999;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.3s;
+      }
+
+      .input-tab.active {
+        background: #F4D03F;
+        color: #000;
+        border-color: #F4D03F;
+      }
+
+      .input-section {
+        display: none;
+      }
+
+      .input-section.active {
+        display: block;
+      }
+
+      /* Voice Input */
+      .voice-input {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .waveform-container {
+        height: 60px;
+        background: #1a1a1a;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #333;
+      }
+
+      canvas {
+        max-width: 100%;
+        height: 100%;
+      }
+
+      .voice-controls {
+        display: flex;
+        gap: 12px;
+      }
+
+      .btn-record {
+        flex: 1;
+        padding: 12px;
+        background: #1A8E8E;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s;
+      }
+
+      .btn-record:hover {
+        background: #0f7070;
+      }
+
+      .btn-record.recording {
+        background: #ff6b6b;
+      }
+
+      .voice-status {
+        text-align: center;
+        color: #999;
+        font-size: 14px;
+      }
+
+      /* Text Input */
+      .text-input {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 12px;
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 6px;
+        color: #fff;
+        font-size: 14px;
+        font-family: inherit;
+        resize: vertical;
+        transition: border-color 0.3s;
+      }
+
+      textarea:focus {
+        outline: none;
+        border-color: #F4D03F;
+        box-shadow: 0 0 0 3px rgba(244, 208, 63, 0.1);
+      }
+
+      .form-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+      }
+
+      .btn-submit {
+        padding: 12px 24px;
+        background: #F4D03F;
+        color: #000;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-submit:hover {
+        background: #f4d63f;
+        transform: translateY(-1px);
+        box-shadow: 0 5px 20px rgba(244, 208, 63, 0.3);
+      }
+
+      .btn-cancel {
+        padding: 12px 24px;
+        background: #333;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+
+      .btn-cancel:hover {
+        background: #444;
+      }
+
+      /* Loading */
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #999;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #444;
+        border-top-color: #F4D03F;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-right: 8px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Entries List */
+      .entries-section h2 {
+        font-size: 18px;
+        margin-bottom: 24px;
+        color: #F4D03F;
+      }
+
+      .entry-card {
+        background: #242424;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 16px;
+      }
+
+      .entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 16px;
+      }
+
+      .entry-time {
+        color: #999;
+        font-size: 12px;
+      }
+
+      .entry-type {
+        display: inline-block;
+        padding: 4px 8px;
+        background: #333;
+        color: #999;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+
+      .entry-input {
+        color: #ccc;
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #333;
+      }
+
+      .action-points {
+        margin-bottom: 16px;
+      }
+
+      .action-points-label {
+        font-weight: 600;
+        color: #1A8E8E;
+        margin-bottom: 8px;
+        font-size: 12px;
+      }
+
+      .action-point {
+        display: flex;
+        gap: 12px;
+        padding: 8px 0;
+        align-items: center;
+      }
+
+      .action-point input[type="checkbox"] {
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+      }
+
+      .action-point.completed span {
+        text-decoration: line-through;
+        color: #666;
+      }
+
+      .reflection {
+        background: #1a1a1a;
+        border-left: 3px solid #F4D03F;
+        padding: 12px;
+        margin-bottom: 16px;
+        border-radius: 4px;
+      }
+
+      .reflection-label {
+        font-weight: 600;
+        color: #F4D03F;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+
+      .clarifying-question {
+        background: #1a1a1a;
+        border-left: 3px solid #1A8E8E;
+        padding: 12px;
+        border-radius: 4px;
+      }
+
+      .clarifying-question-label {
+        font-weight: 600;
+        color: #1A8E8E;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+      }
+
+      .empty-state h3 {
+        font-size: 18px;
+        margin-bottom: 8px;
+      }
+
+      /* Alerts */
+      .alert {
+        padding: 12px 16px;
+        border-radius: 6px;
+        margin-bottom: 16px;
+        font-size: 14px;
+      }
+
+      .alert-error {
+        background: rgba(255, 107, 107, 0.1);
+        color: #ff6b6b;
+        border: 1px solid #ff6b6b;
+      }
+
+      .alert-success {
+        background: rgba(26, 142, 142, 0.1);
+        color: #1A8E8E;
+        border: 1px solid #1A8E8E;
+      }
+
+      /* Responsive */
+      @media (max-width: 600px) {
+        .auth-card {
+          padding: 24px;
+        }
+
+        .header-content {
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .header h1 {
+          font-size: 20px;
+        }
+
+        .entry-form {
+          padding: 16px;
+        }
+
+        .entry-card {
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Auth Screen -->
+    <div class="auth-screen active" id="authScreen">
+      <div class="auth-card">
+        <div class="auth-header">
+          <h1>Say So</h1>
+          <p>Capture and extract actionable insights</p>
+        </div>
+
+        <div class="auth-tabs">
+          <div class="auth-tab active" data-tab="signin">Sign In</div>
+          <div class="auth-tab" data-tab="signup">Sign Up</div>
+        </div>
+
+        <!-- Sign In Form -->
+        <form class="auth-form active" id="signinForm">
+          <div class="form-group">
+            <label for="signin-email">Email</label>
+            <input type="email" id="signin-email" required />
+            <div class="form-error" id="signin-email-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="signin-password">Password</label>
+            <input type="password" id="signin-password" required />
+            <div class="form-error" id="signin-password-error"></div>
+          </div>
+
+          <div id="signin-general-error" class="form-error"></div>
+
+          <button type="submit" class="btn btn-primary">Sign In</button>
+        </form>
+
+        <!-- Sign Up Form -->
+        <form class="auth-form" id="signupForm">
+          <div class="form-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" required />
+            <div class="form-error" id="signup-email-error"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" required />
+            <div class="form-error" id="signup-password-error"></div>
+          </div>
+
+          <div id="signup-general-error" class="form-error"></div>
+
+          <button type="submit" class="btn btn-primary">Sign Up</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- App Screen -->
+    <div class="app-screen" id="appScreen">
+      <div class="header">
+        <div class="header-content">
+          <h1>Say So</h1>
+          <div class="header-actions">
+            <span class="user-email" id="userEmail"></span>
+            <button class="btn-logout" id="logoutBtn">Logout</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="main-content">
+          <!-- Entry Form -->
+          <div class="entry-form">
+            <h2>Create New Entry</h2>
+
+            <div class="input-tabs">
+              <button class="input-tab active" data-input="voice">Voice</button>
+              <button class="input-tab" data-input="text">Text</button>
+            </div>
+
+            <!-- Voice Input -->
+            <div class="input-section active" id="voiceSection">
+              <div class="voice-input">
+                <div class="waveform-container">
+                  <canvas id="waveformCanvas"></canvas>
+                </div>
+                <div class="voice-controls">
+                  <button class="btn-record" id="recordBtn">Start Recording</button>
+                </div>
+                <div class="voice-status" id="voiceStatus"></div>
+              </div>
+            </div>
+
+            <!-- Text Input -->
+            <div class="input-section" id="textSection">
+              <div class="text-input">
+                <textarea id="textInput" placeholder="Describe what you're working on..."></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
+              <button type="button" class="btn-submit" id="submitBtn">Submit</button>
+            </div>
+          </div>
+
+          <div id="alertContainer"></div>
+
+          <!-- Entries List -->
+          <div class="entries-section">
+            <h2>Your Entries</h2>
+            <div id="entriesList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ===== Configuration & State =====
+      const CONFIG = {
+        api: {
+          baseUrl: "/api",
+          endpoints: {
+            signup: "/api/auth/signup",
+            login: "/api/auth/login",
+            logout: "/api/auth/logout",
+            me: "/api/auth/me",
+            entries: "/api/entries",
+            extract: "/api/extract",
+          },
+        },
+        voice: {
+          continuous: true,
+          interimResults: true,
+          language: "en-US",
+        },
+      };
+
+      const state = {
+        user: null,
+        entries: [],
+        isRecording: false,
+        recordedAudio: null,
+        currentInputType: "voice",
+      };
+
+      // ===== Auth Functions =====
+      async function handleSignup(email, password) {
+        try {
+          const response = await fetch(CONFIG.api.endpoints.signup, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+            credentials: "include",
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            handleAuthError(data, "signup");
+            return false;
+          }
+
+          state.user = data.data.user;
+          showAppScreen();
+          return true;
+        } catch (error) {
+          showAlert(`Sign up failed: ${error.message}`, "error");
+          return false;
+        }
+      }
+
+      async function handleSignin(email, password) {
+        try {
+          const response = await fetch(CONFIG.api.endpoints.login, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+            credentials: "include",
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            handleAuthError(data, "signin");
+            return false;
+          }
+
+          state.user = data.data.user;
+          showAppScreen();
+          return true;
+        } catch (error) {
+          showAlert(`Sign in failed: ${error.message}`, "error");
+          return false;
+        }
+      }
+
+      function handleAuthError(data, formType) {
+        const errorData = data.error;
+
+        if (errorData.fields) {
+          for (const [field, message] of Object.entries(errorData.fields)) {
+            if (message) {
+              const errorEl = document.getElementById(`${formType}-${field}-error`);
+              if (errorEl) errorEl.textContent = message;
+            }
+          }
+        } else {
+          const generalErrorEl = document.getElementById(`${formType}-general-error`);
+          if (generalErrorEl) generalErrorEl.textContent = errorData.message;
+        }
+      }
+
+      async function handleLogout() {
+        try {
+          await fetch(CONFIG.api.endpoints.logout, {
+            method: "POST",
+            credentials: "include",
+          });
+
+          state.user = null;
+          showAuthScreen();
+        } catch (error) {
+          showAlert(`Logout failed: ${error.message}`, "error");
+        }
+      }
+
+      async function checkAuth() {
+        try {
+          const response = await fetch(CONFIG.api.endpoints.me, {
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            showAuthScreen();
+            return;
+          }
+
+          const data = await response.json();
+          state.user = data.data.user;
+          showAppScreen();
+          loadEntries();
+        } catch (error) {
+          showAuthScreen();
+        }
+      }
+
+      // ===== Entry Functions =====
+      async function submitEntry() {
+        const inputType = state.currentInputType;
+        let inputText = "";
+
+        if (inputType === "voice") {
+          if (!state.recordedAudio) {
+            showAlert("Please record audio first", "error");
+            return;
+          }
+          inputText = state.recordedAudio;
+        } else {
+          inputText = document.getElementById("textInput").value.trim();
+          if (!inputText) {
+            showAlert("Please enter text", "error");
+            return;
+          }
+        }
+
+        try {
+          // Create entry
+          const createResponse = await fetch(CONFIG.api.endpoints.entries, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ inputType, inputText }),
+          });
+
+          if (!createResponse.ok) throw new Error("Failed to create entry");
+
+          const createData = await createResponse.json();
+          const entryId = createData.data.entry.id;
+
+          // Extract insights
+          showAlert("Extracting insights...", "info");
+
+          const extractResponse = await fetch(CONFIG.api.endpoints.extract, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ entryId, userInput: inputText }),
+          });
+
+          if (!extractResponse.ok) throw new Error("Failed to extract insights");
+
+          const extractData = await extractResponse.json();
+          const extraction = extractData.data.extraction;
+
+          // Update entry with extraction results
+          const updateResponse = await fetch(`${CONFIG.api.endpoints.entries}/${entryId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(extraction),
+          });
+
+          if (!updateResponse.ok) throw new Error("Failed to update entry");
+
+          showAlert("Entry created and processed successfully", "success");
+          clearForm();
+          loadEntries();
+        } catch (error) {
+          showAlert(`Failed to submit entry: ${error.message}`, "error");
+        }
+      }
+
+      async function loadEntries() {
+        try {
+          const response = await fetch(CONFIG.api.endpoints.entries, {
+            credentials: "include",
+          });
+
+          if (!response.ok) throw new Error("Failed to load entries");
+
+          const data = await response.json();
+          state.entries = data.data.entries;
+          renderEntries();
+        } catch (error) {
+          showAlert(`Failed to load entries: ${error.message}`, "error");
+        }
+      }
+
+      function renderEntries() {
+        const container = document.getElementById("entriesList");
+
+        if (state.entries.length === 0) {
+          container.innerHTML = '<div class="empty-state"><h3>No entries yet</h3><p>Create your first entry to get started</p></div>';
+          return;
+        }
+
+        container.innerHTML = state.entries
+          .map((entry) => {
+            const date = new Date(entry.created_at);
+            const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+            const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+            return `
+          <div class="entry-card">
+            <div class="entry-header">
+              <div>
+                <span class="entry-type">${entry.input_type}</span>
+                <span class="entry-time" style="margin-left: 12px">${dateStr} at ${timeStr}</span>
+              </div>
+            </div>
+
+            <div class="entry-input">${escapeHtml(entry.input_text)}</div>
+
+            ${
+              entry.action_points && entry.action_points.length > 0
+                ? `
+              <div class="action-points">
+                <div class="action-points-label">ACTION POINTS</div>
+                ${entry.action_points.map((ap, i) => `<div class="action-point"><input type="checkbox" /> <span>${escapeHtml(ap)}</span></div>`).join("")}
+              </div>
+            `
+                : ""
+            }
+
+            ${
+              entry.reflection
+                ? `
+              <div class="reflection">
+                <div class="reflection-label">REFLECTION</div>
+                <p>${escapeHtml(entry.reflection)}</p>
+              </div>
+            `
+                : ""
+            }
+
+            ${
+              entry.clarifying_question
+                ? `
+              <div class="clarifying-question">
+                <div class="clarifying-question-label">CLARIFYING QUESTION</div>
+                <p>${escapeHtml(entry.clarifying_question)}</p>
+              </div>
+            `
+                : ""
+            }
+          </div>
+        `;
+          })
+          .join("");
+      }
+
+      // ===== Voice Functions =====
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      let recognition;
+
+      function initVoiceRecognition() {
+        if (!SpeechRecognition) {
+          showAlert("Voice recording not supported in your browser", "error");
+          return;
+        }
+
+        recognition = new SpeechRecognition();
+        recognition.continuous = CONFIG.voice.continuous;
+        recognition.interimResults = CONFIG.voice.interimResults;
+        recognition.language = CONFIG.voice.language;
+
+        let transcript = "";
+
+        recognition.onstart = () => {
+          state.isRecording = true;
+          transcript = "";
+          updateRecordButton();
+          document.getElementById("voiceStatus").textContent = "Recording...";
+        };
+
+        recognition.onresult = (event) => {
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+        };
+
+        recognition.onend = () => {
+          state.isRecording = false;
+          state.recordedAudio = transcript;
+          updateRecordButton();
+          if (transcript) {
+            document.getElementById("voiceStatus").textContent = `Recorded: "${transcript}"`;
+          } else {
+            document.getElementById("voiceStatus").textContent = "No audio recorded";
+          }
+        };
+
+        recognition.onerror = (event) => {
+          showAlert(`Voice error: ${event.error}`, "error");
+          state.isRecording = false;
+          updateRecordButton();
+        };
+      }
+
+      function toggleRecording() {
+        if (!state.isRecording) {
+          recognition.start();
+        } else {
+          recognition.stop();
+        }
+      }
+
+      function updateRecordButton() {
+        const btn = document.getElementById("recordBtn");
+        if (state.isRecording) {
+          btn.textContent = "Stop Recording";
+          btn.classList.add("recording");
+        } else {
+          btn.textContent = "Start Recording";
+          btn.classList.remove("recording");
+        }
+      }
+
+      // ===== UI Functions =====
+      function showAuthScreen() {
+        document.getElementById("authScreen").classList.add("active");
+        document.getElementById("appScreen").classList.remove("active");
+      }
+
+      function showAppScreen() {
+        document.getElementById("authScreen").classList.remove("active");
+        document.getElementById("appScreen").classList.add("active");
+        document.getElementById("userEmail").textContent = state.user.email;
+      }
+
+      function showAlert(message, type = "info") {
+        const container = document.getElementById("alertContainer");
+        const alertEl = document.createElement("div");
+        alertEl.className = `alert alert-${type}`;
+        alertEl.textContent = message;
+        container.appendChild(alertEl);
+
+        if (type === "success") {
+          setTimeout(() => alertEl.remove(), 3000);
+        }
+      }
+
+      function clearForm() {
+        state.recordedAudio = null;
+        document.getElementById("textInput").value = "";
+        document.getElementById("voiceStatus").textContent = "";
+        updateRecordButton();
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // ===== Event Listeners =====
+      document.addEventListener("DOMContentLoaded", () => {
+        // Auth tabs
+        document.querySelectorAll(".auth-tab").forEach((tab) => {
+          tab.addEventListener("click", () => {
+            const tabType = tab.dataset.tab;
+            document.querySelectorAll(".auth-tab").forEach((t) => t.classList.remove("active"));
+            document.querySelectorAll(".auth-form").forEach((f) => f.classList.remove("active"));
+            tab.classList.add("active");
+            document.getElementById(`${tabType}Form`).classList.add("active");
+
+            // Clear errors
+            document.querySelectorAll(".form-error").forEach((e) => (e.textContent = ""));
+          });
+        });
+
+        // Auth forms
+        document.getElementById("signinForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("signin-email").value;
+          const password = document.getElementById("signin-password").value;
+          await handleSignin(email, password);
+        });
+
+        document.getElementById("signupForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const email = document.getElementById("signup-email").value;
+          const password = document.getElementById("signup-password").value;
+          await handleSignup(email, password);
+        });
+
+        // Input tabs
+        document.querySelectorAll(".input-tab").forEach((tab) => {
+          tab.addEventListener("click", () => {
+            const inputType = tab.dataset.input;
+            state.currentInputType = inputType;
+            document.querySelectorAll(".input-tab").forEach((t) => t.classList.remove("active"));
+            document.querySelectorAll(".input-section").forEach((s) => s.classList.remove("active"));
+            tab.classList.add("active");
+            document.getElementById(`${inputType}Section`).classList.add("active");
+          });
+        });
+
+        // Voice input
+        document.getElementById("recordBtn").addEventListener("click", toggleRecording);
+
+        // Form actions
+        document.getElementById("submitBtn").addEventListener("click", submitEntry);
+        document.getElementById("cancelBtn").addEventListener("click", clearForm);
+
+        // Logout
+        document.getElementById("logoutBtn").addEventListener("click", handleLogout);
+
+        // Initialize
+        initVoiceRecognition();
+        checkAuth();
+      });
+    </script>
+  </body>
+</html>

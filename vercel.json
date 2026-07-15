@@ -1,0 +1,17 @@
+{
+  "buildCommand": "echo 'Static frontend ready'",
+  "outputDirectory": ".",
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "JWT_SECRET": "@jwt_secret",
+    "ANTHROPIC_API_KEY": "@anthropic_api_key",
+    "ANTHROPIC_MODEL": "claude-sonnet-4-6",
+    "APP_NAME": "Say So",
+    "APP_DESCRIPTION": "Capture and extract actionable insights from your work input"
+  }
+}
