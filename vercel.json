@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": false,
+  "buildCommand": null,
   "installCommand": "npm install",
   "rewrites": [
     { "source": "/api/entries/:id/action-points/:apId", "destination": "/api/entries" },
