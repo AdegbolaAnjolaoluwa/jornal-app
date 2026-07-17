@@ -23,16 +23,30 @@ export const DEFAULT_CONFIG = {
     successMessage: "Update captured. Extracting action points...",
   },
 
-  // Extraction settings: what Claude should look for in the input
+  // Extraction settings: what the model should look for in the input
   extraction: {
-    // System prompt instructs Claude on what to extract
-    systemPrompt: `You are an AI assistant that helps extract actionable insights from work updates.
-When given a user's update, identify and extract:
-1. Concrete action points (specific tasks that need doing)
-2. A brief reflection on the update (1-2 sentences, optional)
-3. A clarifying question if the action points are ambiguous (optional)
+    // System prompt instructs the model on what to extract
+    systemPrompt: `You are reading a personal work-update entry (voice or text). Extract only what the person actually said — never add advice, tips, or tasks they didn't mention.
 
-Format your response as JSON with keys: actionPoints (array), reflection (string or null), clarifyingQuestion (string or null)`,
+Return JSON with four keys:
+
+- actionPoints: array of short imperative phrases for concrete tasks implied by the entry ("Email Tayo about the invoice"). Empty array if nothing implies a task — never invent one.
+- reflection: one short plain sentence acknowledging what was said, or null if it would add nothing beyond restating the entry.
+- clarifyingQuestion: one short specific question, only if the entry implies a task but doesn't say what it is, or could mean two different things. Otherwise null. Ask about the single biggest ambiguity, never more than one question.
+- memorableFacts: array of short standalone statements capturing durable facts about the person worth remembering in future entries — recurring people (names, roles, relationships), ongoing projects, stated goals, or clear preferences. Do NOT include one-off transient details (moods, single-day events, times, dates, anything true only today). Only include a fact if it would still be useful to know weeks from now. Empty array if nothing meets this bar — most entries will have none.
+
+reflection and clarifyingQuestion are plain prose — no lists, no markdown, no meta-commentary about the entry itself, and never end with an offer to help further ("let me know if...", "want me to...").
+
+Example — entry: "ugh long day, meetings back to back"
+{"actionPoints": [], "reflection": "Sounds like a packed one.", "clarifyingQuestion": null, "memorableFacts": []}
+
+Example — entry: "need to follow up with the vendor about that thing"
+{"actionPoints": [], "reflection": null, "clarifyingQuestion": "What specifically do you need to follow up with the vendor about?", "memorableFacts": []}
+
+Example — entry: "spent the afternoon debugging the payments migration with Priya again, she's been a huge help this sprint"
+{"actionPoints": [], "reflection": "Good to have a strong collaborator on something this gnarly.", "clarifyingQuestion": null, "memorableFacts": ["Works with a colleague named Priya", "Working on a payments migration project"]}
+
+Respond with raw JSON only — no markdown fences, no commentary.`,
 
     // Configuration for the action points themselves
     actionPoints: {
@@ -120,6 +134,8 @@ Format your response as JSON with keys: actionPoints (array), reflection (string
           { name: "entry_id", type: "uuid", required: true, foreignKey: "entries.id" },
           { name: "text", type: "text", required: true },
           { name: "completed", type: "boolean", default: false },
+          { name: "remind_at", type: "timestamp" },
+          { name: "reminder_sent_at", type: "timestamp" },
           { name: "created_at", type: "timestamp", default: "now()" },
           { name: "updated_at", type: "timestamp", default: "now()" },
         ],
@@ -129,7 +145,7 @@ Format your response as JSON with keys: actionPoints (array), reflection (string
 
   // AI model configuration
   ai: {
-    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+    model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
     maxTokens: 1024,
     temperature: 0.7,
     retryAttempts: 3,
@@ -196,7 +212,7 @@ Format your response as JSON with keys: actionPoints (array), reflection (string
  * Validates that required environment variables are set
  */
 export function validateConfig() {
-  const required = ["DATABASE_URL", "JWT_SECRET", "ANTHROPIC_API_KEY"];
+  const required = ["DATABASE_URL", "JWT_SECRET", "GROQ_API_KEY"];
   const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {

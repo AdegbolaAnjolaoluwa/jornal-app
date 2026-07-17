@@ -1,17 +1,27 @@
 {
-  "buildCommand": "echo 'Static frontend ready'",
-  "outputDirectory": ".",
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
+  "framework": null,
+  "buildCommand": false,
+  "installCommand": "npm install",
+  "rewrites": [
+    { "source": "/api/entries/:id/action-points/:apId", "destination": "/api/entries" },
+    { "source": "/api/entries/:id/messages", "destination": "/api/entries" },
+    { "source": "/api/entries/:id/audio", "destination": "/api/entries" },
+    { "source": "/api/entries/:id/archive", "destination": "/api/entries" },
+    { "source": "/api/entries/:id/trash", "destination": "/api/entries" },
+    { "source": "/api/entries/archived", "destination": "/api/entries" },
+    { "source": "/api/entries/trash", "destination": "/api/entries" },
+    { "source": "/api/entries/:id", "destination": "/api/entries" }
+  ],
+  "crons": [
+    { "path": "/api/cron/reminders", "schedule": "0 13 * * *" }
+  ],
   "env": {
     "DATABASE_URL": "@database_url",
     "JWT_SECRET": "@jwt_secret",
-    "ANTHROPIC_API_KEY": "@anthropic_api_key",
-    "ANTHROPIC_MODEL": "claude-sonnet-4-6",
+    "GROQ_API_KEY": "@groq_api_key",
+    "GROQ_MODEL": "llama-3.3-70b-versatile",
     "APP_NAME": "Say So",
-    "APP_DESCRIPTION": "Capture and extract actionable insights from your work input"
+    "APP_DESCRIPTION": "Capture and extract actionable insights from your work input",
+    "CRON_SECRET": "@cron_secret"
   }
 }

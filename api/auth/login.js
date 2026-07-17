@@ -12,7 +12,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
 
     if (!email || !password) {
       return res.status(422).json({

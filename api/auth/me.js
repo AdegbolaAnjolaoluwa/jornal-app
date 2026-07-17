@@ -22,12 +22,23 @@ export default async function handler(req, res) {
       });
     }
 
+    let profilePictureDataUri = null;
+    if (user.profile_picture_mime_type) {
+      const picture = await users.getProfilePicture(userId);
+      if (picture?.profile_picture_data) {
+        profilePictureDataUri = `data:${picture.profile_picture_mime_type};base64,${picture.profile_picture_data.toString("base64")}`;
+      }
+    }
+
     return res.status(200).json({
       success: true,
       data: {
         user: {
           id: user.id,
           email: user.email,
+          name: user.name,
+          nickname: user.nickname,
+          profilePictureDataUri,
           createdAt: user.created_at,
           updatedAt: user.updated_at,
         },

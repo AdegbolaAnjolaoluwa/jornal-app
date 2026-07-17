@@ -5,16 +5,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "echo 'Static frontend, serverless backend ready'",
+    "dev": "bash scripts/dev.sh",
     "test": "node --test 'api/**/*.test.js'"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.24.0",
     "@vercel/postgres": "^0.8.0",
     "bcryptjs": "^2.4.3",
     "cookie": "^0.6.0",
-    "jsonwebtoken": "^9.1.2"
+    "groq-sdk": "^1.3.0",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "node": "^20.0.0"
