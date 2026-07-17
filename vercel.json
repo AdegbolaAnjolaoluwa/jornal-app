@@ -14,14 +14,5 @@
   ],
   "crons": [
     { "path": "/api/cron/reminders", "schedule": "0 13 * * *" }
-  ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "JWT_SECRET": "@jwt_secret",
-    "GROQ_API_KEY": "@groq_api_key",
-    "GROQ_MODEL": "llama-3.3-70b-versatile",
-    "APP_NAME": "Say So",
-    "APP_DESCRIPTION": "Capture and extract actionable insights from your work input",
-    "CRON_SECRET": "@cron_secret"
-  }
+  ]
 }
