@@ -38,6 +38,8 @@ export default async function handler(req, res) {
           email: user.email,
           name: user.name,
           nickname: user.nickname,
+          timezone: user.timezone,
+          onboardingCompletedAt: user.onboarding_completed_at,
           profilePictureDataUri,
           createdAt: user.created_at,
           updatedAt: user.updated_at,

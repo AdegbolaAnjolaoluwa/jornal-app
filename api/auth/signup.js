@@ -14,8 +14,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { password } = req.body;
+    const { password, timezone } = req.body;
     const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
 
     // Validate input
     if (!email || !password) {
@@ -27,6 +28,16 @@ export default async function handler(req, res) {
             email: !email ? "Email is required" : null,
             password: !password ? "Password is required" : null,
           },
+        },
+      });
+    }
+
+    if (name.length > 100) {
+      return res.status(422).json({
+        success: false,
+        error: {
+          message: "Invalid name",
+          fields: { name: "Name must be 100 characters or fewer" },
         },
       });
     }
@@ -68,7 +79,10 @@ export default async function handler(req, res) {
 
     // Hash password and create user
     const passwordHash = await hashPassword(password);
-    const user = await users.create(email, passwordHash);
+    const user = await users.create(email, passwordHash, {
+      name: name || null,
+      timezone: typeof timezone === "string" && timezone.length <= 100 ? timezone : null,
+    });
 
     // Create JWT token
     const token = signToken(user.id);
@@ -82,6 +96,9 @@ export default async function handler(req, res) {
         user: {
           id: user.id,
           email: user.email,
+          name: user.name,
+          timezone: user.timezone,
+          onboardingCompletedAt: user.onboarding_completed_at,
           createdAt: user.created_at,
         },
       },

@@ -284,6 +284,12 @@
         min-height: 14px;
       }
 
+      .form-success {
+        font-size: 13px;
+        color: var(--teal-dark);
+        margin-bottom: 12px;
+      }
+
       .auth-submit-wrap {
         margin-top: 24px;
       }
@@ -1988,6 +1994,61 @@
         }
       }
     </style>
+    <!--
+      Analytics (PostHog): set POSTHOG_KEY below to enable. Until then, trackEvent() is a no-op
+      so the onboarding funnel (signup_completed, onboarding_guide_viewed, onboarding_first_entry_*)
+      is instrumented and ready — just missing a project key to send to.
+    -->
+    <script>
+      window.POSTHOG_KEY = ""; // e.g. "phc_..." from your PostHog project settings
+    </script>
+    <script>
+      !(function (t, e) {
+        var o, n, p, r;
+        e.__SV ||
+          ((window.posthog = e),
+          (e._i = []),
+          (e.init = function (i, s, a) {
+            function g(t, e) {
+              var o = e.split(".");
+              2 == o.length && ((t = t[o[0]]), (e = o[1])),
+                (t[e] = function () {
+                  t.push([e].concat(Array.prototype.slice.call(arguments, 0)));
+                });
+            }
+            ((p = t.createElement("script")).type = "text/javascript"),
+              (p.crossOrigin = "anonymous"),
+              (p.async = !0),
+              (p.src = s.api_host.replace(".i.posthog.com", "-assets.i.posthog.com") + "/static/array.js"),
+              (r = t.getElementsByTagName("script")[0]).parentNode.insertBefore(p, r);
+            var u = e;
+            for (
+              void 0 !== a ? (u = e[a] = []) : (a = "posthog"),
+                u.people = u.people || [],
+                u.toString = function (t) {
+                  var e = "posthog";
+                  return "posthog" !== a && (e += "." + a), t || (e += " (stub)"), e;
+                },
+                u.people.toString = function () {
+                  return u.toString(1) + ".people (stub)";
+                },
+                o =
+                  "init me ws ys ps bs capture je Di ks register register_once register_for_session unregister unregister_for_session Ps getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey getNextSurveyStep identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty createPersonProfile opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing debug".split(
+                    " "
+                  ),
+                n = 0;
+              n < o.length;
+              n++
+            )
+              g(u, o[n]);
+            e._i.push([i, s, a]);
+          }),
+          (e.__SV = 1));
+      })(document, window.posthog || []);
+      if (window.POSTHOG_KEY) {
+        posthog.init(window.POSTHOG_KEY, { api_host: "https://us.i.posthog.com", person_profiles: "identified_only" });
+      }
+    </script>
   </head>
   <body>
     <!-- Auth Screen -->
@@ -2005,6 +2066,12 @@
 
         <!-- Sign Up Form -->
         <form class="auth-form active" id="signupForm" novalidate>
+          <div class="form-group">
+            <label for="signup-name">Name</label>
+            <input type="text" id="signup-name" placeholder="What should we call you?" maxlength="100" />
+            <div class="form-error" id="signup-name-error"></div>
+          </div>
+
           <div class="form-group">
             <label for="signup-email">Email</label>
             <input type="email" id="signup-email" placeholder="you@domain.com" />
@@ -2052,7 +2119,50 @@
             <button type="submit" class="btn btn-primary">Sign in</button>
           </div>
 
+          <p class="auth-switch">
+            <a href="#" data-switch-tab="forgot">Forgot password?</a>
+          </p>
           <p class="auth-switch">New here? <a href="#" data-switch-tab="signup">Create an account</a></p>
+        </form>
+
+        <!-- Forgot Password Form -->
+        <form class="auth-form" id="forgotForm" novalidate>
+          <p class="guide-intro" style="margin-bottom: 16px;">Enter your email and we'll send you a reset link.</p>
+          <div class="form-group">
+            <label for="forgot-email">Email</label>
+            <input type="email" id="forgot-email" placeholder="you@domain.com" />
+            <div class="form-error" id="forgot-email-error"></div>
+          </div>
+
+          <div id="forgot-general-error" class="form-error"></div>
+          <div id="forgot-success-message" class="form-success" style="display: none;"></div>
+
+          <div class="auth-submit-wrap">
+            <button type="submit" class="btn btn-primary">Send reset link</button>
+          </div>
+
+          <p class="auth-switch"><a href="#" data-switch-tab="signin">Back to sign in</a></p>
+        </form>
+
+        <!-- Reset Password Form (opened via emailed link with ?resetToken=) -->
+        <form class="auth-form" id="resetForm" novalidate>
+          <p class="guide-intro" style="margin-bottom: 16px;">Choose a new password.</p>
+          <div class="form-group">
+            <label for="reset-password">New password</label>
+            <div class="password-field">
+              <input type="password" id="reset-password" placeholder="••••••••" />
+              <button type="button" class="password-toggle" data-target="reset-password">Show</button>
+            </div>
+            <div class="form-error" id="reset-password-error"></div>
+          </div>
+
+          <div id="reset-general-error" class="form-error"></div>
+
+          <div class="auth-submit-wrap">
+            <button type="submit" class="btn btn-primary">Reset password</button>
+          </div>
+
+          <p class="auth-switch"><a href="#" data-switch-tab="signin">Back to sign in</a></p>
         </form>
 
         <p class="auth-footer-caption">Your entries stay private. Always.</p>
@@ -2101,6 +2211,34 @@
         <div class="guide-cta">
           <button class="btn btn-primary" id="guideStartBtn">Start Journaling</button>
         </div>
+      </div>
+    </div>
+
+    <!-- First Entry Screen (shown once, right after the guide screen) -->
+    <div class="guide-screen" id="firstEntryScreen">
+      <div class="guide-container" style="max-width: 640px;">
+        <div class="guide-eyebrow">Your first entry</div>
+        <h1 class="guide-title">What's on your mind today?</h1>
+        <p class="guide-intro">
+          Write a sentence or two — anything you'd normally say out loud. Say So will pull out any action points and
+          reflect it back to you.
+        </p>
+
+        <div class="guide-card" style="text-align: left; margin-bottom: 24px;">
+          <textarea
+            id="firstEntryInput"
+            placeholder="e.g. Had a good call with the design team, need to send them the updated brief by Friday"
+            rows="4"
+            style="width: 100%; border: none; resize: vertical; font: inherit; color: var(--ink); background: transparent; outline: none;"
+          ></textarea>
+        </div>
+
+        <div class="guide-cta">
+          <button class="btn btn-primary" id="firstEntrySubmitBtn">Save my first entry</button>
+        </div>
+        <p class="auth-switch" style="margin-top: 16px;">
+          <a href="#" id="firstEntrySkipLink">Skip for now</a>
+        </p>
       </div>
     </div>
 
@@ -2347,6 +2485,9 @@
             me: "/api/auth/me",
             profile: "/api/auth/profile",
             picture: "/api/auth/picture",
+            onboarding: "/api/auth/onboarding",
+            requestPasswordReset: "/api/auth/request-password-reset",
+            resetPassword: "/api/auth/reset-password",
             entries: "/api/entries",
             extract: "/api/extract",
             facts: "/api/facts",
@@ -2400,6 +2541,20 @@
         textBeforeRecording: "",
       };
 
+      // ===== Analytics =====
+      // No-ops until window.POSTHOG_KEY is set (see <head>) — safe to call everywhere.
+      function trackEvent(name, properties = {}) {
+        if (window.POSTHOG_KEY && window.posthog) {
+          posthog.capture(name, properties);
+        }
+      }
+
+      function identifyUser(user) {
+        if (window.POSTHOG_KEY && window.posthog) {
+          posthog.identify(user.id, { email: user.email });
+        }
+      }
+
       // ===== Client-side validation =====
       function validateEmailFormat(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -2436,12 +2591,13 @@
       }
 
       // ===== Auth Functions =====
-      async function handleSignup(email, password) {
+      async function handleSignup(email, password, name) {
         try {
+          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
           const response = await fetch(CONFIG.api.endpoints.signup, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, name, timezone }),
             credentials: "include",
           });
 
@@ -2453,6 +2609,8 @@
           }
 
           state.user = data.data.user;
+          identifyUser(state.user);
+          trackEvent("signup_completed");
           showToast(`Welcome, ${displayName(state.user)}! Your account has been created.`);
           showGuideScreen();
           return true;
@@ -2479,13 +2637,121 @@
           }
 
           state.user = data.data.user;
+          identifyUser(state.user);
+          trackEvent("signin_completed");
           showToast(`Welcome back, ${displayName(state.user)}!`);
-          showAppScreen();
-          loadEntries();
+          enterApp();
           return true;
         } catch (error) {
           showToast(`Sign in failed: ${error.message}`, "error");
           return false;
+        }
+      }
+
+      // Route to the guide screen if this user never finished onboarding
+      // (e.g. they closed the tab right after signing up), otherwise straight into the app.
+      function enterApp() {
+        if (!state.user.onboardingCompletedAt) {
+          showGuideScreen();
+        } else {
+          showAppScreen();
+          loadEntries();
+        }
+      }
+
+      // Persist onboarding completion, then hand off to the normal app screen.
+      async function finishOnboarding() {
+        try {
+          const response = await fetch(CONFIG.api.endpoints.onboarding, {
+            method: "PATCH",
+            credentials: "include",
+          });
+          if (response.ok) {
+            const data = await response.json();
+            state.user.onboardingCompletedAt = data.data.onboardingCompletedAt;
+          }
+        } catch (error) {
+          // Non-fatal: worst case the guide re-shows on next login
+        }
+        showAppScreen();
+        loadEntries();
+      }
+
+      async function handleForgotPassword(email) {
+        const errorEl = document.getElementById("forgot-general-error");
+        const successEl = document.getElementById("forgot-success-message");
+        errorEl.textContent = "";
+        successEl.style.display = "none";
+
+        if (!validateEmailFormat(email)) {
+          document.getElementById("forgot-email-error").textContent = "Enter a valid email address";
+          return;
+        }
+        document.getElementById("forgot-email-error").textContent = "";
+
+        try {
+          const response = await fetch(CONFIG.api.endpoints.requestPasswordReset, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            errorEl.textContent = data.error?.message || "Something went wrong";
+            return;
+          }
+
+          successEl.textContent = data.data.message;
+          successEl.style.display = "block";
+
+          // No email provider is wired up yet — the API returns the link directly outside
+          // production so the flow is testable end-to-end. Safe to remove once email sends for real.
+          if (data.data.devResetUrl) {
+            console.log("[dev] password reset link:", data.data.devResetUrl);
+          }
+        } catch (error) {
+          errorEl.textContent = error.message;
+        }
+      }
+
+      async function handleResetPassword(password) {
+        const errorEl = document.getElementById("reset-general-error");
+        errorEl.textContent = "";
+
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get("resetToken");
+        if (!token) {
+          errorEl.textContent = "Reset link is missing or invalid. Please request a new one.";
+          return;
+        }
+
+        if (password.length < 8) {
+          document.getElementById("reset-password-error").textContent = "Password must be at least 8 characters";
+          return;
+        }
+        document.getElementById("reset-password-error").textContent = "";
+
+        try {
+          const response = await fetch(CONFIG.api.endpoints.resetPassword, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ token, password }),
+          });
+          const data = await response.json();
+
+          if (!response.ok) {
+            errorEl.textContent = data.error?.message || "Something went wrong";
+            return;
+          }
+
+          // Clear the token from the URL so a refresh doesn't try to reuse it
+          window.history.replaceState({}, "", window.location.pathname);
+          showToast("Password updated. You're signed in.");
+          await checkAuth();
+        } catch (error) {
+          errorEl.textContent = error.message;
         }
       }
 
@@ -2515,6 +2781,7 @@
           });
 
           state.user = null;
+          if (window.POSTHOG_KEY && window.posthog) posthog.reset();
           showAuthScreen();
         } catch (error) {
           showToast(`Logout failed: ${error.message}`, "error");
@@ -2534,8 +2801,8 @@
 
           const data = await response.json();
           state.user = data.data.user;
-          showAppScreen();
-          loadEntries();
+          identifyUser(state.user);
+          enterApp();
         } catch (error) {
           showAuthScreen();
         }
@@ -3720,13 +3987,25 @@
       function showAuthScreen() {
         document.getElementById("authScreen").classList.add("active");
         document.getElementById("guideScreen").classList.remove("active");
+        document.getElementById("firstEntryScreen").classList.remove("active");
         document.getElementById("appScreen").classList.remove("active");
       }
 
       function showGuideScreen() {
         document.getElementById("authScreen").classList.remove("active");
+        document.getElementById("firstEntryScreen").classList.remove("active");
         document.getElementById("appScreen").classList.remove("active");
         document.getElementById("guideScreen").classList.add("active");
+        trackEvent("onboarding_guide_viewed");
+      }
+
+      function showFirstEntryScreen() {
+        document.getElementById("authScreen").classList.remove("active");
+        document.getElementById("guideScreen").classList.remove("active");
+        document.getElementById("appScreen").classList.remove("active");
+        document.getElementById("firstEntryScreen").classList.add("active");
+        trackEvent("onboarding_first_entry_prompted");
+        document.getElementById("firstEntryInput").focus();
       }
 
       function displayName(user) {
@@ -3748,6 +4027,7 @@
       function showAppScreen() {
         document.getElementById("authScreen").classList.remove("active");
         document.getElementById("guideScreen").classList.remove("active");
+        document.getElementById("firstEntryScreen").classList.remove("active");
         document.getElementById("appScreen").classList.add("active");
         document.getElementById("userEmail").textContent = displayName(state.user);
         renderAvatar(
@@ -3922,7 +4202,18 @@
           if (!validateAuthForm("signup")) return;
           const email = document.getElementById("signup-email").value;
           const password = document.getElementById("signup-password").value;
-          await handleSignup(email, password);
+          const name = document.getElementById("signup-name").value.trim();
+          await handleSignup(email, password, name);
+        });
+
+        document.getElementById("forgotForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          await handleForgotPassword(document.getElementById("forgot-email").value.trim());
+        });
+
+        document.getElementById("resetForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          await handleResetPassword(document.getElementById("reset-password").value);
         });
 
         // Composer: mic + recording controls
@@ -3985,10 +4276,27 @@
           document.getElementById("textInput").focus();
         });
 
-        // Guide screen
+        // Guide screen -> guided first entry
         document.getElementById("guideStartBtn").addEventListener("click", () => {
-          showAppScreen();
-          loadEntries();
+          showFirstEntryScreen();
+        });
+
+        // First entry screen
+        document.getElementById("firstEntrySubmitBtn").addEventListener("click", async () => {
+          const text = document.getElementById("firstEntryInput").value.trim();
+          if (!text) {
+            showAlert("Write a line or two to get started", "error");
+            return;
+          }
+          await finishOnboarding();
+          trackEvent("onboarding_first_entry_created");
+          submitEntry("text", text);
+        });
+
+        document.getElementById("firstEntrySkipLink").addEventListener("click", async (e) => {
+          e.preventDefault();
+          await finishOnboarding();
+          trackEvent("onboarding_first_entry_skipped");
         });
 
         // Entry detail overlay — close on scrim click or Escape
@@ -4111,7 +4419,12 @@
 
         // Initialize
         initVoiceRecognition();
-        checkAuth();
+        if (new URLSearchParams(window.location.search).has("resetToken")) {
+          switchAuthTab("reset");
+          showAuthScreen();
+        } else {
+          checkAuth();
+        }
         showView("allEntriesView");
       });
     </script>
