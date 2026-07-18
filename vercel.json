@@ -3,6 +3,8 @@
   "buildCommand": null,
   "installCommand": "npm install",
   "rewrites": [
+    { "source": "/", "destination": "/landing.html" },
+    { "source": "/app", "destination": "/app.html" },
     { "source": "/api/entries/:id/action-points/:apId", "destination": "/api/entries" },
     { "source": "/api/entries/:id/messages", "destination": "/api/entries" },
     { "source": "/api/entries/:id/audio", "destination": "/api/entries" },

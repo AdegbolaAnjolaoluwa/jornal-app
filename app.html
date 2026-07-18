@@ -4420,8 +4420,12 @@
 
         // Initialize
         initVoiceRecognition();
-        if (new URLSearchParams(window.location.search).has("resetToken")) {
+        const initialParams = new URLSearchParams(window.location.search);
+        if (initialParams.has("resetToken")) {
           switchAuthTab("reset");
+          showAuthScreen();
+        } else if (initialParams.get("tab") === "signin") {
+          switchAuthTab("signin");
           showAuthScreen();
         } else {
           checkAuth();

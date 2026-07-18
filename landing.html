@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          if (stored === "light" || stored === "dark") {
+            document.documentElement.setAttribute("data-theme", stored);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <title>Say So — A private space to think out loud</title>
+    <meta name="description" content="Capture what's on your mind by voice or text. Say So reflects it back, pulls out action points, and keeps everything private." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --paper: #faf6ec;
+        --surface: #ffffff;
+        --ink: #2b2419;
+        --ink-soft: #736a5b;
+        --ink-faint: #a79c89;
+        --border: rgba(43, 36, 25, 0.12);
+        --gold: #b8873a;
+        --gold-dark: #96692a;
+        --gold-tint: #fbf1dd;
+        --gold-tint-border: #e9d6aa;
+        --teal: #4c7a72;
+        --teal-dark: #35594f;
+        --teal-tint: #e8f1ee;
+        --shadow-md: 0 6px 20px rgba(43, 36, 25, 0.08);
+        --shadow-lg: 0 10px 30px rgba(43, 36, 25, 0.1);
+      }
+
+      html[data-theme="dark"] {
+        --paper: #1b1712;
+        --surface: #26211a;
+        --ink: #f0e9db;
+        --ink-soft: #c2b8a3;
+        --ink-faint: #8a7f6b;
+        --border: rgba(240, 233, 219, 0.12);
+        --gold: #d4a24e;
+        --gold-dark: #e8bc6f;
+        --gold-tint: #3a2f1c;
+        --gold-tint-border: #554426;
+        --teal: #6fa89c;
+        --teal-dark: #8fc0b5;
+        --teal-tint: #1f3430;
+        --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
+        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html:not([data-theme="light"]):not([data-theme="dark"]) {
+          --paper: #1b1712;
+          --surface: #26211a;
+          --ink: #f0e9db;
+          --ink-soft: #c2b8a3;
+          --ink-faint: #8a7f6b;
+          --border: rgba(240, 233, 219, 0.12);
+          --gold: #d4a24e;
+          --gold-dark: #e8bc6f;
+          --gold-tint: #3a2f1c;
+          --gold-tint-border: #554426;
+          --teal: #6fa89c;
+          --teal-dark: #8fc0b5;
+          --teal-tint: #1f3430;
+          --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
+          --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Figtree", system-ui, sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 28px 24px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 700;
+        font-size: 18px;
+      }
+
+      .brand-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+
+      .nav-actions a {
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14.5px;
+        color: var(--ink-soft);
+        padding: 10px 18px;
+        border-radius: 10px;
+      }
+
+      .nav-actions a.primary {
+        background: var(--gold);
+        color: #fff;
+        box-shadow: 0 8px 20px rgba(184, 135, 58, 0.28);
+      }
+
+      .hero {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 64px 24px 56px;
+        text-align: center;
+      }
+
+      .hero-eyebrow {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--gold);
+        margin-bottom: 16px;
+      }
+
+      .hero h1 {
+        font-size: 44px;
+        font-weight: 800;
+        line-height: 1.15;
+        margin: 0 0 18px;
+        letter-spacing: -0.01em;
+      }
+
+      .hero p {
+        font-size: 18px;
+        line-height: 1.6;
+        color: var(--ink-soft);
+        margin: 0 0 36px;
+      }
+
+      .hero-ctas {
+        display: flex;
+        gap: 14px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 52px;
+        padding: 0 32px;
+        border-radius: 14px;
+        font-weight: 700;
+        font-size: 15.5px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        background: var(--gold);
+        color: #fff;
+        box-shadow: 0 10px 24px rgba(184, 135, 58, 0.3);
+      }
+
+      .btn-secondary {
+        background: var(--surface);
+        color: var(--ink);
+        border: 1px solid var(--border);
+      }
+
+      .hero-caption {
+        margin-top: 20px;
+        font-size: 13.5px;
+        color: var(--ink-faint);
+      }
+
+      .features {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 24px 24px 80px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+      }
+
+      .feature-card {
+        background: var(--surface);
+        border-radius: 18px;
+        padding: 26px 22px;
+        box-shadow: var(--shadow-md);
+      }
+
+      .feature-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 16px;
+        font-size: 19px;
+      }
+
+      .feature-icon.teal {
+        background: var(--teal-tint);
+      }
+
+      .feature-icon.gold {
+        background: var(--gold-tint);
+        color: var(--gold-dark);
+        font-weight: 700;
+      }
+
+      .feature-icon.neutral {
+        background: var(--gold-tint);
+        color: var(--ink-soft);
+        font-weight: 700;
+      }
+
+      .feature-card h2 {
+        font-size: 16px;
+        font-weight: 700;
+        margin: 0 0 8px;
+      }
+
+      .feature-card p {
+        font-size: 13.5px;
+        line-height: 1.55;
+        color: var(--ink-soft);
+        margin: 0;
+      }
+
+      .closing {
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 0 24px 96px;
+        text-align: center;
+      }
+
+      .closing h2 {
+        font-size: 26px;
+        font-weight: 700;
+        margin: 0 0 14px;
+      }
+
+      .closing p {
+        font-size: 15.5px;
+        color: var(--ink-soft);
+        margin: 0 0 28px;
+        line-height: 1.6;
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 28px 24px;
+      }
+
+      .footer-inner {
+        max-width: 1080px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--ink-faint);
+      }
+
+      @media (max-width: 860px) {
+        .features {
+          grid-template-columns: 1fr 1fr;
+        }
+        .hero h1 {
+          font-size: 34px;
+        }
+      }
+
+      @media (max-width: 540px) {
+        .features {
+          grid-template-columns: 1fr;
+        }
+        .hero-ctas {
+          flex-direction: column;
+        }
+        .btn {
+          width: 100%;
+        }
+        .nav-actions a {
+          padding: 8px 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <div class="brand"><span class="brand-dot"></span><span>Say So</span></div>
+      <div class="nav-actions">
+        <a href="/app?tab=signin">Sign in</a>
+        <a href="/app" class="primary">Get started</a>
+      </div>
+    </div>
+
+    <section class="hero">
+      <div class="hero-eyebrow">Welcome to Say So</div>
+      <h1>A private space to think out loud</h1>
+      <p>
+        Speak or type whatever's on your mind. Say So reflects it back, quietly pulls out the action points, and
+        keeps every entry yours alone.
+      </p>
+      <div class="hero-ctas">
+        <a href="/app" class="btn btn-primary">Get started free</a>
+        <a href="/app?tab=signin" class="btn btn-secondary">Sign in</a>
+      </div>
+      <div class="hero-caption">No credit card. Your entries stay private, always.</div>
+    </section>
+
+    <section class="features">
+      <div class="feature-card">
+        <div class="feature-icon teal">&#127908;</div>
+        <h2>Speak it or type it</h2>
+        <p>Capture an entry by voice or text — whichever feels natural in the moment.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon gold">&#10024;</div>
+        <h2>Action points, automatically</h2>
+        <p>Say So reads each entry and pulls out anything that sounds like a next step.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon neutral">?</div>
+        <h2>A gentle nudge when it's unclear</h2>
+        <p>If an entry feels ambiguous, you'll get one clarifying question back — never a quiz, just a nudge.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon teal">&#128274;</div>
+        <h2>Everything saved, privately</h2>
+        <p>Every entry lands in your own archive. Nothing is shared, nothing is public.</p>
+      </div>
+    </section>
+
+    <section class="closing">
+      <h2>Say it once. Let Say So keep track.</h2>
+      <p>Sign up in a few seconds and write your first entry today.</p>
+      <a href="/app" class="btn btn-primary">Get started free</a>
+    </section>
+
+    <footer>
+      <div class="footer-inner">
+        <span>&copy; <span id="year"></span> Say So</span>
+        <span>Your entries stay private. Always.</span>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>

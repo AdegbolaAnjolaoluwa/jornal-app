@@ -47,7 +47,7 @@ async function handleRequest(req, res) {
 
       const protocol = req.headers["x-forwarded-proto"] || (process.env.NODE_ENV === "production" ? "https" : "http");
       const origin = req.headers.origin || `${protocol}://${req.headers.host}`;
-      const resetUrl = `${origin}/?resetToken=${rawToken}`;
+      const resetUrl = `${origin}/app?resetToken=${rawToken}`;
 
       await sendPasswordResetEmail({ to: user.email, resetUrl });
 
