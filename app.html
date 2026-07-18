@@ -1997,7 +1997,7 @@
     <!--
       Analytics (PostHog): set POSTHOG_KEY below to enable. Until then, trackEvent() is a no-op
       so the onboarding funnel (signup_completed, onboarding_guide_viewed, onboarding_first_entry_*)
-      is instrumented and ready — just missing a project key to send to.
+      is instrumented and ready, just missing a project key to send to.
     -->
     <script>
       window.POSTHOG_KEY = ""; // e.g. "phc_..." from your PostHog project settings
@@ -2186,7 +2186,7 @@
               </div>
             </div>
             <h2>Speak it or type it</h2>
-            <p>Capture an entry by voice or text — whichever feels natural in the moment.</p>
+            <p>Capture an entry by voice or text, whichever feels natural in the moment.</p>
           </div>
 
           <div class="guide-card">
@@ -2198,7 +2198,7 @@
           <div class="guide-card">
             <div class="guide-icon neutral">?</div>
             <h2>A gentle nudge when it's unclear</h2>
-            <p>If an entry feels ambiguous, you'll get one clarifying question back — never a quiz, just a nudge.</p>
+            <p>If an entry feels ambiguous, you'll get one clarifying question back. Never a quiz, just a nudge.</p>
           </div>
 
           <div class="guide-card">
@@ -2220,7 +2220,7 @@
         <div class="guide-eyebrow">Your first entry</div>
         <h1 class="guide-title">What's on your mind today?</h1>
         <p class="guide-intro">
-          Write a sentence or two — anything you'd normally say out loud. Say So will pull out any action points and
+          Write a sentence or two, anything you'd normally say out loud. Say So will pull out any action points and
           reflect it back to you.
         </p>
 
@@ -2378,7 +2378,7 @@
                     <span class="preview-time" id="previewTime">0:00 / 0:00</span>
                   </div>
 
-                  <textarea id="previewTranscript" class="preview-transcript" placeholder="Transcript will appear here — edit as needed"></textarea>
+                  <textarea id="previewTranscript" class="preview-transcript" placeholder="Transcript will appear here, edit as needed"></textarea>
                   <input type="text" id="previewAdditionalText" class="preview-additional" placeholder="Add a note (optional)" />
 
                   <div class="preview-actions-row">
@@ -2541,7 +2541,7 @@
       };
 
       // ===== Analytics =====
-      // No-ops until window.POSTHOG_KEY is set (see <head>) — safe to call everywhere.
+      // No-ops until window.POSTHOG_KEY is set (see <head>). Safe to call everywhere.
       function trackEvent(name, properties = {}) {
         if (window.POSTHOG_KEY && window.posthog) {
           posthog.capture(name, properties);
@@ -2706,7 +2706,7 @@
           successEl.textContent = data.data.message;
           successEl.style.display = "block";
 
-          // No email provider is wired up yet — the API returns the link directly outside
+          // No email provider is wired up yet, so the API returns the link directly outside
           // production so the flow is testable end-to-end. Safe to remove once email sends for real.
           if (data.data.devResetUrl) {
             console.log("[dev] password reset link:", data.data.devResetUrl);
@@ -3043,7 +3043,7 @@
 
       function renderVoiceNotes() {
         const container = document.getElementById("voiceNotesList");
-        // Note: only looks at already-loaded state.entries (capped at 50 by the API) — a user with
+        // Note: only looks at already-loaded state.entries (capped at 50 by the API). A user with
         // more than 50 entries could have voice notes outside this window. Not solved here.
         const notes = state.entries.filter((e) => e.has_audio);
 
@@ -3827,7 +3827,7 @@
           }
         } else if (!speechUnsupportedNoticeShown) {
           speechUnsupportedNoticeShown = true;
-          showAlert("Live transcription isn't supported in this browser — you can type the transcript after recording.", "info");
+          showAlert("Live transcription isn't supported in this browser. You can type the transcript after recording.", "info");
         }
 
         setComposerMode("recording");
@@ -4189,7 +4189,7 @@
           });
         });
 
-        // Auth forms — client-side validation on submit, then hit the API
+        // Auth forms: client-side validation on submit, then hit the API
         document.getElementById("signinForm").addEventListener("submit", async (e) => {
           e.preventDefault();
           if (!validateAuthForm("signin")) return;
@@ -4269,7 +4269,7 @@
         // Logout
         document.getElementById("logoutBtn").addEventListener("click", handleLogout);
 
-        // Mobile tab bar — Create scrolls to the composer and focuses it
+        // Mobile tab bar: Create scrolls to the composer and focuses it
         document.getElementById("tabbarCreateBtn").addEventListener("click", () => {
           showView("allEntriesView");
           const form = document.querySelector(".entry-form");
@@ -4300,7 +4300,7 @@
           trackEvent("onboarding_first_entry_skipped");
         });
 
-        // Entry detail overlay — close on scrim click or Escape
+        // Entry detail overlay: close on scrim click or Escape
         document.getElementById("detailOverlay").addEventListener("click", (e) => {
           if (e.target.id === "detailOverlay") closeEntryDetail();
         });

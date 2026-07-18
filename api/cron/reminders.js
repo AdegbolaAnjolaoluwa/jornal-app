@@ -1,8 +1,8 @@
 /**
  * POST /api/cron/reminders
  * Triggered by Vercel Cron (see vercel.json). Finds action points with a due,
- * unsent reminder and sends an email for each. Not session-authenticated —
- * authenticated via the Authorization header Vercel Cron attaches when
+ * unsent reminder and sends an email for each. Not session-authenticated,
+ * but authenticated via the Authorization header Vercel Cron attaches when
  * CRON_SECRET is set.
  */
 

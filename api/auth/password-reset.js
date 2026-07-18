@@ -3,10 +3,10 @@
  * Two steps of the same flow, dispatched by request shape (kept in one file to
  * stay under the Hobby-plan serverless function cap):
  *
- * 1. { email } — issue a single-use, time-limited reset token and email it.
+ * 1. { email }: issue a single-use, time-limited reset token and email it.
  *    Always responds with success (whether or not the email exists) to avoid
  *    leaking which addresses are registered.
- * 2. { token, password } — consume the token and set a new password.
+ * 2. { token, password }: consume the token and set a new password.
  */
 
 import { users } from "../../lib/db.js";
@@ -51,7 +51,7 @@ async function handleRequest(req, res) {
 
       await sendPasswordResetEmail({ to: user.email, resetUrl });
 
-      // No email provider is wired up yet — surface the link outside production
+      // No email provider is wired up yet, so surface the link outside production
       // so the flow is testable. Remove once a real provider sends this link.
       if (process.env.NODE_ENV !== "production") {
         devResetUrl = resetUrl;
