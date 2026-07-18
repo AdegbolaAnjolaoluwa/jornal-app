@@ -2485,9 +2485,8 @@
             me: "/api/auth/me",
             profile: "/api/auth/profile",
             picture: "/api/auth/picture",
-            onboarding: "/api/auth/onboarding",
-            requestPasswordReset: "/api/auth/request-password-reset",
-            resetPassword: "/api/auth/reset-password",
+            requestPasswordReset: "/api/auth/password-reset",
+            resetPassword: "/api/auth/password-reset",
             entries: "/api/entries",
             extract: "/api/extract",
             facts: "/api/facts",
@@ -2662,9 +2661,11 @@
       // Persist onboarding completion, then hand off to the normal app screen.
       async function finishOnboarding() {
         try {
-          const response = await fetch(CONFIG.api.endpoints.onboarding, {
+          const response = await fetch(CONFIG.api.endpoints.profile, {
             method: "PATCH",
+            headers: { "Content-Type": "application/json" },
             credentials: "include",
+            body: JSON.stringify({ onboardingCompleted: true }),
           });
           if (response.ok) {
             const data = await response.json();

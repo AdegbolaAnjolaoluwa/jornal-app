@@ -1,6 +1,6 @@
 /**
  * PATCH /api/auth/profile
- * Update the current user's name/nickname (requires authentication)
+ * Update the current user's name/nickname, or mark onboarding complete (requires authentication)
  */
 
 import { users } from "../../lib/db.js";
@@ -13,7 +13,15 @@ export default async function handler(req, res) {
 
   try {
     const userId = requireAuth(req);
-    const { name, nickname } = req.body;
+    const { name, nickname, onboardingCompleted } = req.body;
+
+    if (onboardingCompleted === true) {
+      const updated = await users.completeOnboarding(userId);
+      return res.status(200).json({
+        success: true,
+        data: { onboardingCompletedAt: updated.onboarding_completed_at },
+      });
+    }
 
     const updates = {};
     const fieldErrors = {};
