@@ -23,11 +23,22 @@
         --gold-dark: #b8873a;
         --gold-tint: #3a2f1c;
         --gold-tint-soft: #fbf1dd;
+        --gold-accent: #cb953d;
+        --gold-accent-deep: #a86a18;
         --teal: #5fa898;
         --teal-dark: #4c7a72;
         --teal-tint: #1f3430;
         --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
         --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
+
+        /* Feature-card material: warm cream instead of pure white, so the
+           cards read as an extension of the hero rather than dropped-in UI. */
+        --card-surface: #f8f5ef;
+        --card-border: rgba(203, 149, 61, 0.18);
+        --card-border-hover: #cb953d;
+        --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
+        --card-shadow-hover: 0 28px 80px rgba(0, 0, 0, 0.25);
+        --card-desc: #6d655a;
 
         /* Text sitting directly on the charcoal background (nav, hero, footer) */
         --on-dark-ink: #f3ede0;
@@ -277,21 +288,23 @@
         padding: 24px 24px 80px;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 18px;
+        gap: 20px;
       }
 
       .feature-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 18px;
-        padding: 28px 26px;
-        box-shadow: var(--shadow-md);
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
+        background: var(--card-surface);
+        background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(248, 245, 239, 0.95));
+        border: 1px solid var(--card-border);
+        border-radius: 28px;
+        padding: 40px;
+        box-shadow: var(--card-shadow);
+        transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
       }
 
       .feature-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-lg);
+        transform: translateY(-8px);
+        box-shadow: var(--card-shadow-hover);
+        border-color: var(--card-border-hover);
       }
 
       .feature-card--wide {
@@ -299,7 +312,7 @@
         display: grid;
         grid-template-columns: auto 1fr;
         align-items: center;
-        column-gap: 22px;
+        column-gap: 28px;
       }
 
       .feature-card--wide h2 {
@@ -324,8 +337,10 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 18px;
+        margin-bottom: 20px;
         flex-shrink: 0;
+        background: linear-gradient(135deg, var(--gold-accent), var(--gold-accent-deep));
+        color: #fff;
       }
 
       .feature-icon svg {
@@ -333,33 +348,18 @@
         height: 22px;
       }
 
-      .feature-icon.teal {
-        background: var(--teal-tint);
-        color: var(--teal-dark);
-      }
-
-      .feature-icon.gold {
-        background: var(--gold-tint);
-        color: var(--gold-dark);
-      }
-
-      .feature-icon.neutral {
-        background: var(--gold-tint);
-        color: var(--ink-soft);
-      }
-
       .feature-card h2 {
-        font-size: 16.5px;
         font-weight: 700;
+        font-size: 1.55rem;
         color: var(--ink);
-        margin: 0 0 8px;
+        margin: 0 0 10px;
         letter-spacing: -0.005em;
       }
 
       .feature-card p {
-        font-size: 13.5px;
-        line-height: 1.6;
-        color: var(--ink-soft);
+        font-size: 14.5px;
+        line-height: 1.8;
+        color: var(--card-desc);
         margin: 0;
       }
 
@@ -416,6 +416,9 @@
       @media (max-width: 540px) {
         .features {
           grid-template-columns: 1fr;
+        }
+        .feature-card {
+          padding: 28px 24px;
         }
         .feature-card--wide {
           grid-column: span 1;
@@ -491,7 +494,7 @@
 
     <section class="features">
       <div class="feature-card feature-card--wide">
-        <div class="feature-icon teal">
+        <div class="feature-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
             <path d="M6 11a6 6 0 0 0 12 0" />
@@ -503,7 +506,7 @@
         <p>Capture an entry by voice or text, whichever feels natural in the moment. No forms, no fields, just say what's going on.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon gold">
+        <div class="feature-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 11l3 3L22 4" />
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
@@ -513,7 +516,7 @@
         <p>Anything that sounds like a next step gets pulled out and tracked for you.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon neutral">
+        <div class="feature-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
             <path d="M12 17h.01" />
@@ -524,7 +527,7 @@
         <p>One clarifying question, never a quiz, just a nudge.</p>
       </div>
       <div class="feature-card feature-card--wide">
-        <div class="feature-icon teal">
+        <div class="feature-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <rect x="4" y="10" width="16" height="11" rx="2" />
             <path d="M8 10V7a4 4 0 0 1 8 0v3" />
