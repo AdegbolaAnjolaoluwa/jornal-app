@@ -3,16 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script>
-      (function () {
-        try {
-          var stored = localStorage.getItem("theme");
-          if (stored === "light" || stored === "dark") {
-            document.documentElement.setAttribute("data-theme", stored);
-          }
-        } catch (e) {}
-      })();
-    </script>
     <title>Say So: A private space to think out loud</title>
     <meta name="description" content="Capture what's on your mind by voice or text. Say So reflects it back, pulls out action points, and keeps everything private." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,59 +10,29 @@
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --paper: #faf6ec;
-        --surface: #ffffff;
+        /* Fixed charcoal stage: the page background is always dark here,
+           independent of the app's light/dark toggle, so cream cards and
+           gold/teal accents read as the visual focus. */
+        --page-bg: #1a1a1a;
+        --surface: #fffdf7;
         --ink: #2b2419;
         --ink-soft: #736a5b;
         --ink-faint: #a79c89;
         --border: rgba(43, 36, 25, 0.12);
-        --gold: #b8873a;
-        --gold-dark: #96692a;
-        --gold-tint: #fbf1dd;
-        --gold-tint-border: #e9d6aa;
-        --teal: #4c7a72;
-        --teal-dark: #35594f;
-        --teal-tint: #e8f1ee;
-        --shadow-md: 0 6px 20px rgba(43, 36, 25, 0.08);
-        --shadow-lg: 0 10px 30px rgba(43, 36, 25, 0.1);
-      }
-
-      html[data-theme="dark"] {
-        --paper: #1b1712;
-        --surface: #26211a;
-        --ink: #f0e9db;
-        --ink-soft: #c2b8a3;
-        --ink-faint: #8a7f6b;
-        --border: rgba(240, 233, 219, 0.12);
-        --gold: #d4a24e;
-        --gold-dark: #e8bc6f;
+        --gold: #d9a53a;
+        --gold-dark: #b8873a;
         --gold-tint: #3a2f1c;
-        --gold-tint-border: #554426;
-        --teal: #6fa89c;
-        --teal-dark: #8fc0b5;
+        --teal: #5fa898;
+        --teal-dark: #4c7a72;
         --teal-tint: #1f3430;
         --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
-      }
+        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
 
-      @media (prefers-color-scheme: dark) {
-        html:not([data-theme="light"]):not([data-theme="dark"]) {
-          --paper: #1b1712;
-          --surface: #26211a;
-          --ink: #f0e9db;
-          --ink-soft: #c2b8a3;
-          --ink-faint: #8a7f6b;
-          --border: rgba(240, 233, 219, 0.12);
-          --gold: #d4a24e;
-          --gold-dark: #e8bc6f;
-          --gold-tint: #3a2f1c;
-          --gold-tint-border: #554426;
-          --teal: #6fa89c;
-          --teal-dark: #8fc0b5;
-          --teal-tint: #1f3430;
-          --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-          --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
-        }
+        /* Text sitting directly on the charcoal background (nav, hero, footer) */
+        --on-dark-ink: #f3ede0;
+        --on-dark-soft: #b9b0a0;
+        --on-dark-faint: #8a8378;
+        --on-dark-border: rgba(243, 237, 224, 0.12);
       }
 
       * {
@@ -82,9 +42,12 @@
       body {
         margin: 0;
         font-family: "Figtree", system-ui, sans-serif;
-        background: var(--paper);
-        color: var(--ink);
+        color: var(--on-dark-ink);
         -webkit-font-smoothing: antialiased;
+        background-color: var(--page-bg);
+        background-image: radial-gradient(ellipse 120% 80% at 20% 0%, #222222 0%, transparent 55%),
+          radial-gradient(ellipse 120% 80% at 100% 100%, #141414 0%, transparent 55%);
+        background-attachment: fixed;
       }
 
       a {
@@ -119,7 +82,7 @@
         text-decoration: none;
         font-weight: 600;
         font-size: 14.5px;
-        color: var(--ink-soft);
+        color: var(--on-dark-soft);
         padding: 10px 18px;
         border-radius: 10px;
       }
@@ -174,7 +137,7 @@
       .hero p {
         font-size: 18px;
         line-height: 1.6;
-        color: var(--ink-soft);
+        color: var(--on-dark-soft);
         margin: 0 0 36px;
       }
 
@@ -214,7 +177,7 @@
       .hero-caption {
         margin-top: 20px;
         font-size: 13.5px;
-        color: var(--ink-faint);
+        color: var(--on-dark-faint);
       }
 
       .features {
@@ -263,6 +226,7 @@
       .feature-card h2 {
         font-size: 16px;
         font-weight: 700;
+        color: var(--ink);
         margin: 0 0 8px;
       }
 
@@ -288,13 +252,13 @@
 
       .closing p {
         font-size: 15.5px;
-        color: var(--ink-soft);
+        color: var(--on-dark-soft);
         margin: 0 0 28px;
         line-height: 1.6;
       }
 
       footer {
-        border-top: 1px solid var(--border);
+        border-top: 1px solid var(--on-dark-border);
         padding: 28px 24px;
       }
 
@@ -305,7 +269,7 @@
         align-items: center;
         justify-content: space-between;
         font-size: 13px;
-        color: var(--ink-faint);
+        color: var(--on-dark-faint);
       }
 
       @media (max-width: 860px) {
