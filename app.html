@@ -2877,6 +2877,7 @@
             body: JSON.stringify({ inputType, inputText }),
           });
 
+          if (handleSessionExpired(createResponse)) return;
           if (!createResponse.ok) throw new Error("Failed to create entry");
 
           const createData = await createResponse.json();
@@ -2917,12 +2918,23 @@
         }
       }
 
+      // Session expired or was never established: bounce to sign-in instead of
+      // leaving the user stuck on a broken app screen. Returns true if handled.
+      function handleSessionExpired(response) {
+        if (response.status !== 401) return false;
+        state.user = null;
+        showAuthScreen();
+        showToast("Your session expired. Please sign in again.", "error");
+        return true;
+      }
+
       async function loadEntries() {
         try {
           const response = await fetch(CONFIG.api.endpoints.entries, {
             credentials: "include",
           });
 
+          if (handleSessionExpired(response)) return;
           if (!response.ok) throw new Error("Failed to load entries");
 
           const data = await response.json();
