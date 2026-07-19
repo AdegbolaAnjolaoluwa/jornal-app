@@ -22,6 +22,7 @@
         --gold: #d9a53a;
         --gold-dark: #b8873a;
         --gold-tint: #3a2f1c;
+        --gold-tint-soft: #fbf1dd;
         --teal: #5fa898;
         --teal-dark: #4c7a72;
         --teal-tint: #1f3430;
@@ -180,59 +181,184 @@
         color: var(--on-dark-faint);
       }
 
+      .demo-card {
+        margin: 56px auto 0;
+        max-width: 560px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--gold);
+        border-radius: 16px;
+        padding: 22px 24px 24px;
+        box-shadow: var(--shadow-lg);
+        text-align: left;
+      }
+
+      .demo-card-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+
+      .demo-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--border);
+      }
+
+      .demo-card-label {
+        margin-left: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--ink-faint);
+        letter-spacing: 0.02em;
+      }
+
+      .demo-input {
+        font-size: 14.5px;
+        line-height: 1.55;
+        color: var(--ink);
+        margin: 0 0 16px;
+        font-style: italic;
+      }
+
+      .demo-reflection {
+        background: var(--gold-tint-soft);
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 13.5px;
+        line-height: 1.5;
+        color: var(--ink);
+        margin-bottom: 16px;
+      }
+
+      .demo-reflection-label {
+        display: block;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--gold-dark);
+        margin-bottom: 4px;
+      }
+
+      .demo-actions-label {
+        display: block;
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--teal-dark);
+        margin-bottom: 8px;
+      }
+
+      .demo-action {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-size: 13.5px;
+        color: var(--ink);
+        padding: 5px 0;
+      }
+
+      .demo-checkbox {
+        width: 16px;
+        height: 16px;
+        border-radius: 5px;
+        border: 1.5px solid var(--border);
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
       .features {
         max-width: 1080px;
         margin: 0 auto;
         padding: 24px 24px 80px;
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 20px;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
       }
 
       .feature-card {
         background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 18px;
-        padding: 26px 22px;
+        padding: 28px 26px;
         box-shadow: var(--shadow-md);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+      }
+
+      .feature-card--wide {
+        grid-column: span 3;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        column-gap: 22px;
+      }
+
+      .feature-card--wide h2 {
+        grid-column: 2;
+        grid-row: 1;
+      }
+
+      .feature-card--wide p {
+        grid-column: 2;
+        grid-row: 2;
+      }
+
+      .feature-card--wide .feature-icon {
+        grid-row: 1 / 3;
+        margin-bottom: 0;
       }
 
       .feature-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 16px;
-        font-size: 19px;
+        margin-bottom: 18px;
+        flex-shrink: 0;
+      }
+
+      .feature-icon svg {
+        width: 22px;
+        height: 22px;
       }
 
       .feature-icon.teal {
         background: var(--teal-tint);
+        color: var(--teal-dark);
       }
 
       .feature-icon.gold {
         background: var(--gold-tint);
         color: var(--gold-dark);
-        font-weight: 700;
       }
 
       .feature-icon.neutral {
         background: var(--gold-tint);
         color: var(--ink-soft);
-        font-weight: 700;
       }
 
       .feature-card h2 {
-        font-size: 16px;
+        font-size: 16.5px;
         font-weight: 700;
         color: var(--ink);
         margin: 0 0 8px;
+        letter-spacing: -0.005em;
       }
 
       .feature-card p {
         font-size: 13.5px;
-        line-height: 1.55;
+        line-height: 1.6;
         color: var(--ink-soft);
         margin: 0;
       }
@@ -276,14 +402,27 @@
         .features {
           grid-template-columns: 1fr 1fr;
         }
+        .feature-card--wide {
+          grid-column: span 2;
+        }
         .hero h1 {
           font-size: 34px;
+        }
+        .demo-card {
+          margin-top: 40px;
         }
       }
 
       @media (max-width: 540px) {
         .features {
           grid-template-columns: 1fr;
+        }
+        .feature-card--wide {
+          grid-column: span 1;
+          display: block;
+        }
+        .feature-card--wide .feature-icon {
+          margin-bottom: 18px;
         }
         .hero-ctas {
           flex-direction: column;
@@ -320,28 +459,79 @@
         <a href="/app?tab=signin" class="btn btn-secondary">Sign in</a>
       </div>
       <div class="hero-caption">No credit card. Your entries stay private, always.</div>
+
+      <div class="demo-card" aria-hidden="true">
+        <div class="demo-card-header">
+          <span class="demo-dot"></span>
+          <span class="demo-dot"></span>
+          <span class="demo-dot"></span>
+          <span class="demo-card-label">New entry</span>
+        </div>
+        <p class="demo-input">
+          "Had a good call with the design team, need to send them the updated brief by Friday. Also should follow
+          up with Priya about the payments migration."
+        </p>
+        <div class="demo-reflection">
+          <span class="demo-reflection-label">Reflection</span>
+          Sounds like a productive one, and good that the Priya thread is still moving.
+        </div>
+        <div class="demo-actions">
+          <span class="demo-actions-label">Action points</span>
+          <div class="demo-action">
+            <span class="demo-checkbox"></span>
+            <span>Send the updated brief to the design team by Friday</span>
+          </div>
+          <div class="demo-action">
+            <span class="demo-checkbox"></span>
+            <span>Follow up with Priya about the payments migration</span>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="features">
-      <div class="feature-card">
-        <div class="feature-icon teal">&#127908;</div>
+      <div class="feature-card feature-card--wide">
+        <div class="feature-icon teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Z" />
+            <path d="M6 11a6 6 0 0 0 12 0" />
+            <path d="M12 17v4" />
+            <path d="M9 21h6" />
+          </svg>
+        </div>
         <h2>Speak it or type it</h2>
-        <p>Capture an entry by voice or text, whichever feels natural in the moment.</p>
+        <p>Capture an entry by voice or text, whichever feels natural in the moment. No forms, no fields, just say what's going on.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon gold">&#10024;</div>
+        <div class="feature-icon gold">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4" />
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+          </svg>
+        </div>
         <h2>Action points, automatically</h2>
-        <p>Say So reads each entry and pulls out anything that sounds like a next step.</p>
+        <p>Anything that sounds like a next step gets pulled out and tracked for you.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon neutral">?</div>
+        <div class="feature-icon neutral">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+            <path d="M12 17h.01" />
+            <circle cx="12" cy="12" r="9" />
+          </svg>
+        </div>
         <h2>A gentle nudge when it's unclear</h2>
-        <p>If an entry feels ambiguous, you'll get one clarifying question back. Never a quiz, just a nudge.</p>
+        <p>One clarifying question, never a quiz, just a nudge.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon teal">&#128274;</div>
+      <div class="feature-card feature-card--wide">
+        <div class="feature-icon teal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="10" width="16" height="11" rx="2" />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+          </svg>
+        </div>
         <h2>Everything saved, privately</h2>
-        <p>Every entry lands in your own archive. Nothing is shared, nothing is public.</p>
+        <p>Every entry lands in your own archive. Nothing is shared, nothing is ever made public.</p>
       </div>
     </section>
 
