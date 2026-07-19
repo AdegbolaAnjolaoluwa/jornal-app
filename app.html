@@ -294,6 +294,22 @@
         margin-top: 24px;
       }
 
+      .remember-me {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13.5px;
+        color: var(--ink-soft);
+        cursor: pointer;
+        user-select: none;
+        margin-top: 4px;
+      }
+
+      .remember-me input[type="checkbox"] {
+        accent-color: var(--gold);
+        cursor: pointer;
+      }
+
       .auth-switch {
         text-align: center;
         font-size: 13.5px;
@@ -2113,6 +2129,11 @@
             <div class="form-error" id="signin-password-error"></div>
           </div>
 
+          <label class="remember-me">
+            <input type="checkbox" id="signin-remember-me" />
+            <span>Remember me for 30 days</span>
+          </label>
+
           <div id="signin-general-error" class="form-error"></div>
 
           <div class="auth-submit-wrap">
@@ -2619,12 +2640,12 @@
         }
       }
 
-      async function handleSignin(email, password) {
+      async function handleSignin(email, password, rememberMe) {
         try {
           const response = await fetch(CONFIG.api.endpoints.login, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
+            body: JSON.stringify({ email, password, rememberMe }),
             credentials: "include",
           });
 
@@ -4235,7 +4256,8 @@
           if (!validateAuthForm("signin")) return;
           const email = document.getElementById("signin-email").value;
           const password = document.getElementById("signin-password").value;
-          await handleSignin(email, password);
+          const rememberMe = document.getElementById("signin-remember-me").checked;
+          await handleSignin(email, password, rememberMe);
         });
 
         document.getElementById("signupForm").addEventListener("submit", async (e) => {

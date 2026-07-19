@@ -155,13 +155,23 @@ Respond with raw JSON only, no markdown fences, no commentary.`,
   // Authentication settings
   auth: {
     jwtSecret: process.env.JWT_SECRET,
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    // Default session: expires when the browser closes (no cookie Max-Age), backed
+    // by a short-lived JWT so a persisted cookie jar can't outlive it regardless.
+    // "Remember me" issues a JWT + cookie that both last 30 days instead.
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1d",
+    jwtExpiresInRememberMe: process.env.JWT_EXPIRES_IN_REMEMBER_ME || "30d",
     cookieName: "session",
     cookieOptions: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      // No maxAge: session cookie, cleared when the browser fully closes.
+    },
+    cookieOptionsRememberMe: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     },
     passwordMinLength: 8,
   },

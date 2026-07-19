@@ -12,7 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { password } = req.body;
+    const { password, rememberMe } = req.body;
     const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
 
     if (!email || !password) {
@@ -47,10 +47,10 @@ export default async function handler(req, res) {
     }
 
     // Create JWT token
-    const token = signToken(user.id);
+    const token = signToken(user.id, { rememberMe: rememberMe === true });
 
     // Set httpOnly cookie
-    res.setHeader("Set-Cookie", setCookieHeader(token));
+    res.setHeader("Set-Cookie", setCookieHeader(token, { rememberMe: rememberMe === true }));
 
     return res.status(200).json({
       success: true,
