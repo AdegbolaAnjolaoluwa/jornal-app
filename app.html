@@ -2843,10 +2843,9 @@
           clearForm();
 
           try {
-            const extractResponse = await fetch(CONFIG.api.endpoints.extract, {
+            const extractResponse = await authFetch(CONFIG.api.endpoints.extract, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              credentials: "include",
               body: JSON.stringify({ userInput: inputText }),
             });
             if (!extractResponse.ok) throw new Error("Failed to extract insights");
@@ -2857,7 +2856,9 @@
             tempEntry.clarifying_question = extraction.clarifyingQuestion;
             tempEntry.temp_action_points = extraction.actionPoints;
           } catch (error) {
-            showAlert(`Couldn't get AI insights for temporary entry: ${error.message}`, "error");
+            if (!(error instanceof SessionExpiredError)) {
+              showAlert(`Couldn't get AI insights for temporary entry: ${error.message}`, "error");
+            }
           } finally {
             tempEntry.isExtracting = false;
             renderEntries();
@@ -2870,14 +2871,12 @@
         const audioBlobToUpload = inputType === "voice" && !state.audioTooLarge ? state.audioBlob : null;
 
         try {
-          const createResponse = await fetch(CONFIG.api.endpoints.entries, {
+          const createResponse = await authFetch(CONFIG.api.endpoints.entries, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({ inputType, inputText }),
           });
 
-          if (handleSessionExpired(createResponse)) return;
           if (!createResponse.ok) throw new Error("Failed to create entry");
 
           const createData = await createResponse.json();
@@ -2886,24 +2885,24 @@
           if (audioBlobToUpload) {
             try {
               const audioBase64 = await blobToBase64(audioBlobToUpload);
-              const audioResponse = await fetch(`${CONFIG.api.endpoints.entries}/${entryId}/audio`, {
+              const audioResponse = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/audio`, {
                 method: "POST",
-                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ audioBase64, mimeType: audioBlobToUpload.type || "audio/webm" }),
               });
               if (!audioResponse.ok) throw new Error("Audio upload failed");
             } catch (audioError) {
-              showAlert("Audio couldn't be saved, but your entry was created", "error");
+              if (!(audioError instanceof SessionExpiredError)) {
+                showAlert("Audio couldn't be saved, but your entry was created", "error");
+              }
             }
           }
 
           showAlert("Extracting insights...", "info");
 
-          const extractResponse = await fetch(CONFIG.api.endpoints.extract, {
+          const extractResponse = await authFetch(CONFIG.api.endpoints.extract, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({ entryId, userInput: inputText }),
           });
 
@@ -2914,27 +2913,35 @@
           clearForm();
           loadEntries();
         } catch (error) {
-          showAlert(`Failed to submit entry: ${error.message}`, "error");
+          if (!(error instanceof SessionExpiredError)) {
+            showAlert(`Failed to submit entry: ${error.message}`, "error");
+          }
         }
       }
 
-      // Session expired or was never established: bounce to sign-in instead of
-      // leaving the user stuck on a broken app screen. Returns true if handled.
-      function handleSessionExpired(response) {
-        if (response.status !== 401) return false;
-        state.user = null;
-        showAuthScreen();
-        showToast("Your session expired. Please sign in again.", "error");
-        return true;
+      // Marks an error as "already handled" (session-expiry redirect already shown)
+      // so callers' catch blocks can skip showing their own generic error toast.
+      class SessionExpiredError extends Error {}
+
+      // Drop-in replacement for authenticated fetch() calls. On a 401, redirects to
+      // sign-in and throws SessionExpiredError instead of leaving the caller to fail
+      // ambiguously; every other response (ok or not) is returned as normal so
+      // existing `if (!response.ok)` handling at each call site is unaffected.
+      async function authFetch(url, options = {}) {
+        const response = await fetch(url, { ...options, credentials: "include" });
+        if (response.status === 401) {
+          state.user = null;
+          showAuthScreen();
+          showToast("Your session expired. Please sign in again.", "error");
+          throw new SessionExpiredError("Session expired");
+        }
+        return response;
       }
 
       async function loadEntries() {
         try {
-          const response = await fetch(CONFIG.api.endpoints.entries, {
-            credentials: "include",
-          });
+          const response = await authFetch(CONFIG.api.endpoints.entries);
 
-          if (handleSessionExpired(response)) return;
           if (!response.ok) throw new Error("Failed to load entries");
 
           const data = await response.json();
@@ -2942,7 +2949,9 @@
           state.entries = [...tempEntries, ...data.data.entries];
           renderEntries();
         } catch (error) {
-          showAlert(`Failed to load entries: ${error.message}`, "error");
+          if (!(error instanceof SessionExpiredError)) {
+            showAlert(`Failed to load entries: ${error.message}`, "error");
+          }
         }
       }
 
@@ -2955,13 +2964,15 @@
         renderProfileSection();
         renderThemeToggle();
         try {
-          const response = await fetch(CONFIG.api.endpoints.facts, { credentials: "include" });
+          const response = await authFetch(CONFIG.api.endpoints.facts);
           if (!response.ok) throw new Error("Failed to load facts");
           const data = await response.json();
           state.facts = data.data.facts;
           renderFacts();
         } catch (error) {
-          showAlert(`Failed to load settings: ${error.message}`, "error");
+          if (!(error instanceof SessionExpiredError)) {
+            showAlert(`Failed to load settings: ${error.message}`, "error");
+          }
         }
       }
 
@@ -2999,13 +3010,15 @@
       // ===== To-do List =====
       async function loadTodoList() {
         try {
-          const response = await fetch(CONFIG.api.endpoints.actionPoints, { credentials: "include" });
+          const response = await authFetch(CONFIG.api.endpoints.actionPoints);
           if (!response.ok) throw new Error("Failed to load action points");
           const data = await response.json();
           state.todoActionPoints = data.data.actionPoints;
           renderTodoList();
         } catch (error) {
-          showAlert(`Failed to load to-do list: ${error.message}`, "error");
+          if (!(error instanceof SessionExpiredError)) {
+            showAlert(`Failed to load to-do list: ${error.message}`, "error");
+          }
         }
       }
 
@@ -3081,7 +3094,7 @@
             btn.disabled = true;
             btn.textContent = "Loading…";
             try {
-              const response = await fetch(`${CONFIG.api.endpoints.entries}/${entryId}/audio`, { credentials: "include" });
+              const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/audio`);
               if (!response.ok) throw new Error("Failed to load audio");
               const data = await response.json();
               const blob = base64ToBlob(data.data.audioBase64, data.data.mimeType);
@@ -3092,7 +3105,9 @@
             } catch (error) {
               btn.disabled = false;
               btn.textContent = "Play";
-              showAlert(`Failed to load audio: ${error.message}`, "error");
+              if (!(error instanceof SessionExpiredError)) {
+                showAlert(`Failed to load audio: ${error.message}`, "error");
+              }
             }
           });
         });
@@ -3101,13 +3116,15 @@
       // ===== Archive =====
       async function loadArchivedEntries() {
         try {
-          const response = await fetch(CONFIG.api.endpoints.archivedEntries, { credentials: "include" });
+          const response = await authFetch(CONFIG.api.endpoints.archivedEntries);
           if (!response.ok) throw new Error("Failed to load archived entries");
           const data = await response.json();
           state.archivedEntries = data.data.entries;
           renderArchiveList();
         } catch (error) {
-          showAlert(`Failed to load archive: ${error.message}`, "error");
+          if (!(error instanceof SessionExpiredError)) {
+            showAlert(`Failed to load archive: ${error.message}`, "error");
+          }
         }
       }
 
@@ -3137,13 +3154,15 @@
       // ===== Trash =====
       async function loadTrashedEntries() {
         try {
-          const response = await fetch(CONFIG.api.endpoints.trashedEntries, { credentials: "include" });
+          const response = await authFetch(CONFIG.api.endpoints.trashedEntries);
           if (!response.ok) throw new Error("Failed to load trash");
           const data = await response.json();
           state.trashedEntries = data.data.entries;
           renderTrashList();
         } catch (error) {
-          showAlert(`Failed to load trash: ${error.message}`, "error");
+          if (!(error instanceof SessionExpiredError)) {
+            showAlert(`Failed to load trash: ${error.message}`, "error");
+          }
         }
       }
 
@@ -3176,10 +3195,9 @@
             const entryId = btn.dataset.entryId;
             const archived = btn.dataset.action === "archive";
             try {
-              const response = await fetch(`${CONFIG.api.endpoints.entries}/${entryId}/archive`, {
+              const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/archive`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include",
                 body: JSON.stringify({ archived }),
               });
               if (!response.ok) throw new Error("Request failed");
@@ -3193,7 +3211,9 @@
                 loadEntries();
               }
             } catch (error) {
-              showAlert(`Failed to ${archived ? "archive" : "unarchive"} entry: ${error.message}`, "error");
+              if (!(error instanceof SessionExpiredError)) {
+                showAlert(`Failed to ${archived ? "archive" : "unarchive"} entry: ${error.message}`, "error");
+              }
             }
           });
         });
@@ -3206,10 +3226,9 @@
             const entryId = btn.dataset.entryId;
             const deleted = btn.dataset.action === "trash";
             try {
-              const response = await fetch(`${CONFIG.api.endpoints.entries}/${entryId}/trash`, {
+              const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/trash`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include",
                 body: JSON.stringify({ deleted }),
               });
               if (!response.ok) throw new Error("Request failed");
@@ -3225,7 +3244,9 @@
                 loadEntries();
               }
             } catch (error) {
-              showAlert(`Failed to ${deleted ? "move entry to trash" : "restore entry"}: ${error.message}`, "error");
+              if (!(error instanceof SessionExpiredError)) {
+                showAlert(`Failed to ${deleted ? "move entry to trash" : "restore entry"}: ${error.message}`, "error");
+              }
             }
           });
         });
@@ -3236,16 +3257,17 @@
             const entryId = btn.dataset.entryId;
             if (!confirm("Permanently delete this entry? This cannot be undone.")) return;
             try {
-              const response = await fetch(`${CONFIG.api.endpoints.entries}/${entryId}`, {
+              const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}`, {
                 method: "DELETE",
-                credentials: "include",
               });
               if (!response.ok) throw new Error("Request failed");
 
               state.trashedEntries = state.trashedEntries.filter((e) => e.id !== entryId);
               renderTrashList();
             } catch (error) {
-              showAlert(`Failed to delete entry: ${error.message}`, "error");
+              if (!(error instanceof SessionExpiredError)) {
+                showAlert(`Failed to delete entry: ${error.message}`, "error");
+              }
             }
           });
         });
@@ -3341,10 +3363,9 @@
       }
 
       async function updateActionPoint(entryId, apId, fields) {
-        const response = await fetch(`${CONFIG.api.endpoints.entries}/${entryId}/action-points/${apId}`, {
+        const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/action-points/${apId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify(fields),
         });
         if (!response.ok) {
@@ -3370,7 +3391,9 @@
               await updateActionPoint(entryId, apId, { completed: !wasCompleted });
             } catch (err) {
               point.classList.toggle("completed");
-              showAlert(`Failed to update action point: ${err.message}`, "error");
+              if (!(err instanceof SessionExpiredError)) {
+                showAlert(`Failed to update action point: ${err.message}`, "error");
+              }
             }
           });
         });
@@ -3421,7 +3444,9 @@
             btn.title = "Reminder set";
             picker.remove();
           } catch (err) {
-            showAlert(`Failed to set reminder: ${err.message}`, "error");
+            if (!(err instanceof SessionExpiredError)) {
+              showAlert(`Failed to set reminder: ${err.message}`, "error");
+            }
           }
         });
 
@@ -3435,7 +3460,9 @@
               btn.title = "Set reminder";
               picker.remove();
             } catch (err) {
-              showAlert(`Failed to clear reminder: ${err.message}`, "error");
+              if (!(err instanceof SessionExpiredError)) {
+                showAlert(`Failed to clear reminder: ${err.message}`, "error");
+              }
             }
           });
         }
@@ -3602,9 +3629,7 @@
       // ===== Clarifying Question Chat =====
       async function loadChatThread(entryId) {
         try {
-          const response = await fetch(`${CONFIG.api.endpoints.entries}/${entryId}/messages`, {
-            credentials: "include",
-          });
+          const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/messages`);
 
           if (!response.ok) throw new Error("Failed to load conversation");
 
@@ -3618,7 +3643,9 @@
           messagesEl.innerHTML = html.join("");
           messagesEl.scrollTop = messagesEl.scrollHeight;
         } catch (error) {
-          showToast(`Failed to load conversation: ${error.message}`, "error");
+          if (!(error instanceof SessionExpiredError)) {
+            showToast(`Failed to load conversation: ${error.message}`, "error");
+          }
         }
       }
 
@@ -3634,10 +3661,9 @@
         input.disabled = true;
 
         try {
-          const response = await fetch(`${CONFIG.api.endpoints.entries}/${entryId}/messages`, {
+          const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/messages`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({ content }),
           });
 
@@ -3647,7 +3673,9 @@
           messagesEl.insertAdjacentHTML("beforeend", chatMessageHtml("assistant", data.data.assistantMessage.content));
           messagesEl.scrollTop = messagesEl.scrollHeight;
         } catch (error) {
-          showToast(`Failed to send message: ${error.message}`, "error");
+          if (!(error instanceof SessionExpiredError)) {
+            showToast(`Failed to send message: ${error.message}`, "error");
+          }
         } finally {
           input.disabled = false;
           input.focus();
@@ -4354,10 +4382,9 @@
           const name = document.getElementById("profileNameInput").value;
           const nickname = document.getElementById("profileNicknameInput").value;
           try {
-            const response = await fetch(CONFIG.api.endpoints.profile, {
+            const response = await authFetch(CONFIG.api.endpoints.profile, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              credentials: "include",
               body: JSON.stringify({ name, nickname }),
             });
             const data = await response.json();
@@ -4375,7 +4402,9 @@
             renderProfileSection();
             showAlert("Profile saved", "success");
           } catch (error) {
-            showAlert(`Failed to save profile: ${error.message}`, "error");
+            if (!(error instanceof SessionExpiredError)) {
+              showAlert(`Failed to save profile: ${error.message}`, "error");
+            }
           }
         });
 
@@ -4396,10 +4425,9 @@
 
           try {
             const imageBase64 = await blobToBase64(file);
-            const response = await fetch(CONFIG.api.endpoints.picture, {
+            const response = await authFetch(CONFIG.api.endpoints.picture, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              credentials: "include",
               body: JSON.stringify({ imageBase64, mimeType: file.type }),
             });
             const data = await response.json();
@@ -4408,7 +4436,7 @@
             }
 
             // Re-fetch to get the canonical data URI from the server
-            const meResponse = await fetch(CONFIG.api.endpoints.me, { credentials: "include" });
+            const meResponse = await authFetch(CONFIG.api.endpoints.me);
             const meData = await meResponse.json();
             state.user.profilePictureDataUri = meData.data.user.profilePictureDataUri;
 
@@ -4423,7 +4451,9 @@
             previewImg.src = previousSrc;
             previewImg.style.display = previousDisplay;
             renderProfileSection();
-            showAlert(`Failed to upload picture: ${error.message}`, "error");
+            if (!(error instanceof SessionExpiredError)) {
+              showAlert(`Failed to upload picture: ${error.message}`, "error");
+            }
           } finally {
             URL.revokeObjectURL(objectUrl);
             e.target.value = "";
