@@ -1165,6 +1165,55 @@
         border-left-color: var(--gold);
       }
 
+      .skeleton-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid transparent;
+        border-radius: 16px;
+        padding: 20px 22px;
+        margin-bottom: 14px;
+      }
+
+      .skeleton-bar {
+        height: 12px;
+        border-radius: 6px;
+        background: linear-gradient(90deg, var(--border) 25%, var(--border-input) 50%, var(--border) 75%);
+        background-size: 200% 100%;
+        animation: skeletonShimmer 1.4s ease-in-out infinite;
+      }
+
+      @keyframes skeletonShimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      .skeleton-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .skeleton-badge {
+        width: 52px;
+        height: 18px;
+        border-radius: 20px;
+      }
+
+      .skeleton-time {
+        width: 64px;
+        height: 11px;
+        margin-left: auto;
+      }
+
+      .skeleton-line {
+        margin-bottom: 8px;
+      }
+
+      .skeleton-line:last-child {
+        margin-bottom: 0;
+      }
+
       .entry-header {
         display: flex;
         justify-content: flex-start;
@@ -2947,9 +2996,26 @@
       // Drop-in replacement for authenticated fetch() calls. On a 401, redirects to
       // sign-in and throws SessionExpiredError instead of leaving the caller to fail
       // ambiguously; every other response (ok or not) is returned as normal so
-      // existing `if (!response.ok)` handling at each call site is unaffected.
+      // existing `if (!response.ok)` handling at each call site is unaffected. A
+      // 20s timeout guards against a request that never resolves (e.g. dropped
+      // connection) so callers always get a rejected promise instead of hanging
+      // forever, leaving a UI stuck on a skeleton/spinner with no way out.
+      const AUTH_FETCH_TIMEOUT_MS = 20000;
+
       async function authFetch(url, options = {}) {
-        const response = await fetch(url, { ...options, credentials: "include" });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), AUTH_FETCH_TIMEOUT_MS);
+
+        let response;
+        try {
+          response = await fetch(url, { ...options, credentials: "include", signal: controller.signal });
+        } catch (err) {
+          if (err.name === "AbortError") throw new Error("Request timed out. Please try again.");
+          throw err;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+
         if (response.status === 401) {
           state.user = null;
           showAuthScreen();
@@ -2959,7 +3025,29 @@
         return response;
       }
 
+      function renderEntriesSkeleton(count = 4) {
+        const container = document.getElementById("entriesList");
+        const card = `
+          <div class="skeleton-card">
+            <div class="skeleton-header">
+              <div class="skeleton-bar skeleton-badge"></div>
+              <div class="skeleton-bar skeleton-time"></div>
+            </div>
+            <div class="skeleton-bar skeleton-line" style="width: 92%;"></div>
+            <div class="skeleton-bar skeleton-line" style="width: 78%;"></div>
+            <div class="skeleton-bar skeleton-line" style="width: 55%;"></div>
+          </div>
+        `;
+        container.innerHTML = card.repeat(count);
+      }
+
       async function loadEntries() {
+        // Only show the skeleton on a cold load, not on refetches after an
+        // archive/trash/create action where entries are already on screen.
+        const isColdLoad = state.entries.filter((e) => !e.isTemporary).length === 0;
+        if (isColdLoad) {
+          renderEntriesSkeleton();
+        }
         try {
           const response = await authFetch(CONFIG.api.endpoints.entries);
 
@@ -2972,8 +3060,25 @@
         } catch (error) {
           if (!(error instanceof SessionExpiredError)) {
             showAlert(`Failed to load entries: ${error.message}`, "error");
+            // Clear a stuck skeleton on failure so the user gets a retry path
+            // instead of a screen frozen on shimmering placeholders forever.
+            if (isColdLoad) renderEntriesLoadError();
           }
         }
+      }
+
+      function renderEntriesLoadError() {
+        const container = document.getElementById("entriesList");
+        container.innerHTML = `
+          <div class="empty-state">
+            <h3>Couldn't load entries</h3>
+            <p>Something went wrong. <a href="#" id="retryLoadEntriesLink">Try again</a></p>
+          </div>
+        `;
+        document.getElementById("retryLoadEntriesLink").addEventListener("click", (e) => {
+          e.preventDefault();
+          loadEntries();
+        });
       }
 
       function truncate(text, n) {
@@ -4134,9 +4239,11 @@
       }
 
       function switchAuthTab(tabType) {
+        const form = document.getElementById(`${tabType}Form`);
+        if (!form) return;
         document.querySelectorAll(".auth-tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === tabType));
         document.querySelectorAll(".auth-form").forEach((f) => f.classList.remove("active"));
-        document.getElementById(`${tabType}Form`).classList.add("active");
+        form.classList.add("active");
         document.querySelectorAll(".form-error").forEach((e) => (e.textContent = ""));
         document.querySelectorAll(".form-group input").forEach((i) => i.classList.remove("has-error"));
       }
@@ -4233,7 +4340,7 @@
         });
 
         // Auth switch links (bottom of form)
-        document.querySelectorAll(".auth-switch a").forEach((link) => {
+        document.querySelectorAll(".auth-switch a[data-switch-tab]").forEach((link) => {
           link.addEventListener("click", (e) => {
             e.preventDefault();
             switchAuthTab(link.dataset.switchTab);
