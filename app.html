@@ -646,6 +646,37 @@
         align-items: center;
       }
 
+      .header-icon-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        border: none;
+        background: transparent;
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s;
+        flex-shrink: 0;
+      }
+
+      .header-icon-btn:hover {
+        background: var(--sidebar-bg);
+        color: var(--ink);
+      }
+
+      .header-icon-btn.active {
+        background: var(--gold);
+        color: #fff;
+        box-shadow: 0 0 0 1px var(--gold-dark) inset;
+      }
+
+      .header-icon-btn.active:hover {
+        background: var(--gold-dark);
+        color: #fff;
+      }
+
       .user-email {
         color: var(--ink-faint);
         font-size: 14px;
@@ -673,11 +704,12 @@
 
       .profile-picture-img,
       .profile-picture-placeholder {
-        width: 56px;
-        height: 56px;
+        width: 64px;
+        height: 64px;
         border-radius: 50%;
         object-fit: cover;
         flex-shrink: 0;
+        box-shadow: 0 0 0 3px var(--gold-tint);
       }
 
       .profile-picture-placeholder {
@@ -686,7 +718,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 22px;
         font-weight: 700;
         text-transform: uppercase;
       }
@@ -694,8 +726,14 @@
       .profile-picture-row {
         display: flex;
         align-items: center;
-        gap: 14px;
-        margin-bottom: 18px;
+        gap: 16px;
+        margin-bottom: 22px;
+      }
+
+      .profile-picture-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
       }
 
       .btn-logout {
@@ -763,6 +801,13 @@
         align-items: center;
         gap: 8px;
         overflow: hidden;
+        cursor: pointer;
+        border-radius: 8px;
+      }
+
+      .sidebar-brand:focus-visible {
+        outline: 2px solid var(--gold);
+        outline-offset: 2px;
       }
 
       .sidebar.collapsed .sidebar-brand span {
@@ -835,56 +880,6 @@
 
       .sidebar.collapsed .sidebar-new-entry-label {
         display: none;
-      }
-
-      .sidebar-search-row {
-        margin-bottom: 12px;
-      }
-
-      .sidebar-search-row .entries-search-input {
-        width: 100%;
-        box-sizing: border-box;
-        height: 36px;
-        border-radius: 10px;
-        border: 1px solid var(--border);
-        background: var(--surface);
-        color: var(--ink);
-        font-size: 13.5px;
-        font-family: inherit;
-        padding: 0 12px;
-      }
-
-      .sidebar.collapsed .sidebar-search-row {
-        display: none;
-      }
-
-      .sidebar-open-count {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        justify-content: flex-start;
-        width: 100%;
-        background: var(--teal-tint);
-        border: 1px solid var(--teal-tint-border);
-        border-radius: 10px;
-        padding: 9px 12px;
-        margin-bottom: 16px;
-        cursor: pointer;
-        font-family: inherit;
-        font-size: 12.5px;
-        font-weight: 600;
-        color: var(--teal-dark);
-        text-align: left;
-        box-sizing: border-box;
-      }
-
-      .sidebar-open-count:hover {
-        filter: brightness(0.98);
-      }
-
-      .sidebar.collapsed .sidebar-open-count {
-        justify-content: center;
-        padding: 9px 0;
       }
 
       .sidebar-history {
@@ -974,6 +969,25 @@
         display: none;
       }
 
+      .sidebar-link-badge {
+        flex-shrink: 0;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: var(--teal-tint);
+        color: var(--teal-dark);
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .sidebar.collapsed .sidebar-link-badge {
+        display: none !important;
+      }
+
       .sidebar.collapsed .sidebar-dot {
         width: 9px;
         height: 9px;
@@ -1046,6 +1060,8 @@
         flex: 1;
         min-width: 0;
         padding: 36px 44px;
+        position: relative;
+        overflow: hidden;
       }
 
       .content-inner {
@@ -1067,13 +1083,122 @@
         display: block;
       }
 
+      /* ===== Home View: always a fresh start ===== */
+      #homeView.active {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: calc(100vh - 65px - 72px);
+      }
+
+      .home-content {
+        position: relative;
+        width: 100%;
+      }
+
+      /* Anchored to .main-content (the full sidebar-to-edge column), not the
+         720px-capped .content-inner/#homeView - so the glow reads as ambient
+         light spanning the page, not a small box confined to the composer's
+         own width, and starts at the very top of the content area, directly
+         under the header bar. */
+      .home-rays {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+        /* Same ambient-glow treatment as the auth screen's rays: fades toward
+           the page background at the edges instead of sitting on top of it. */
+        -webkit-mask-image: radial-gradient(ellipse 60% 55% at 50% 0%, #000 40%, transparent 85%);
+        mask-image: radial-gradient(ellipse 60% 55% at 50% 0%, #000 40%, transparent 85%);
+        opacity: 0.5;
+      }
+
+      html[data-theme="dark"] .home-rays {
+        opacity: 0.8;
+      }
+
+      #homeView .entry-form {
+        width: 100%;
+        position: relative;
+        z-index: 1;
+      }
+
+      .home-welcome {
+        position: relative;
+        z-index: 1;
+        text-align: center;
+        margin-bottom: 32px;
+      }
+
+      .home-greeting {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--ink);
+        letter-spacing: -0.01em;
+        margin-bottom: 10px;
+      }
+
+      .home-date {
+        font-size: 15px;
+        color: var(--ink-soft);
+      }
+
+      .conversation-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: none;
+        border: none;
+        color: var(--ink-soft);
+        font-family: inherit;
+        font-size: 14px;
+        cursor: pointer;
+        padding: 8px 4px;
+        margin-bottom: 12px;
+        transition: color 0.15s;
+      }
+
+      .conversation-back-btn:hover {
+        color: var(--ink);
+      }
+
+      .conversation-card {
+        width: 100%;
+        max-width: 720px;
+        background: var(--surface);
+        border-radius: 20px;
+        padding: 32px 34px;
+        box-shadow: var(--shadow-md);
+        box-sizing: border-box;
+        animation: conversationIn 0.2s ease;
+      }
+
+      @keyframes conversationIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .settings-card {
+        background: var(--surface);
+        border-radius: 18px;
+        box-shadow: var(--shadow-md);
+        padding: 26px 28px;
+        margin-bottom: 20px;
+      }
+
+      .settings-card:last-child {
+        margin-bottom: 0;
+      }
+
       .settings-section-label {
         font-size: 11px;
         font-weight: 700;
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--ink-faint);
-        margin-bottom: 14px;
+        margin-bottom: 18px;
       }
 
       .settings-hint {
@@ -1090,6 +1215,23 @@
         box-shadow: var(--shadow-md);
         padding: 24px 26px;
         margin-bottom: 40px;
+        transition: box-shadow 0.2s ease;
+      }
+
+      #homeView .entry-form {
+        border-radius: 24px;
+        box-shadow: var(--shadow-lg);
+        padding: 22px 26px 18px;
+        margin-bottom: 0;
+      }
+
+      #homeView .entry-form:focus-within {
+        box-shadow: var(--shadow-modal);
+      }
+
+      #homeView .composer-textarea {
+        min-height: 60px;
+        font-size: 16px;
       }
 
       .composer-field {
@@ -1122,38 +1264,10 @@
         color: var(--ink-faint);
       }
 
-      .btn-mic {
-        position: absolute;
-        right: 8px;
-        bottom: 8px;
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        border: none;
-        cursor: pointer;
-        background: var(--gold);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: box-shadow 0.2s, filter 0.2s;
-      }
-
-      .btn-mic:hover {
-        filter: brightness(1.05);
-      }
-
-      .btn-mic.is-recording {
-        box-shadow: 0 0 0 8px rgba(184, 135, 58, 0.18);
-        animation: micPulse 1.6s ease-in-out infinite;
-      }
-
-      @keyframes micPulse {
-        0%, 100% { box-shadow: 0 0 0 6px rgba(184, 135, 58, 0.14); }
-        50% { box-shadow: 0 0 0 10px rgba(184, 135, 58, 0.22); }
-      }
-
+      /* .btn-mic and .btn-submit-circle occupy the same slot and morph
+         between each other as the composer gains/loses text - mic shown
+         while idle & empty, send shown once there's text to send. */
+      .btn-mic,
       .btn-submit-circle {
         position: absolute;
         right: 8px;
@@ -1169,11 +1283,22 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: filter 0.2s, background 0.2s;
+        transition: opacity 0.18s ease, transform 0.18s ease, filter 0.2s, background 0.2s;
       }
 
+      .btn-mic:hover,
       .btn-submit-circle:hover:not(:disabled) {
         filter: brightness(1.05);
+      }
+
+      .btn-mic.is-recording {
+        box-shadow: 0 0 0 8px rgba(184, 135, 58, 0.18);
+        animation: micPulse 1.6s ease-in-out infinite;
+      }
+
+      @keyframes micPulse {
+        0%, 100% { box-shadow: 0 0 0 6px rgba(184, 135, 58, 0.14); }
+        50% { box-shadow: 0 0 0 10px rgba(184, 135, 58, 0.22); }
       }
 
       .btn-submit-circle:disabled {
@@ -1182,74 +1307,22 @@
         cursor: not-allowed;
       }
 
-      .content-subheading {
-        font-size: 15px;
-        color: var(--ink-soft);
-        margin-top: -8px;
-        margin-bottom: 20px;
+      /* Whichever of mic/send isn't the current affordance is scaled/faded
+         out rather than removed, so the morph has something to animate
+         between. Recording (in progress or paused) always hides the mic
+         slot for the send button, regardless of leftover composer text. */
+      .composer:not(.has-text) .btn-submit-circle,
+      .composer.has-text .btn-mic,
+      .composer--recording .btn-mic,
+      .composer--paused .btn-mic,
+      .composer--recording .btn-submit-circle,
+      .composer--paused .btn-submit-circle {
+        opacity: 0;
+        transform: scale(0.6);
+        pointer-events: none;
+        position: absolute;
       }
 
-      .composer-tabs {
-        display: flex;
-        gap: 4px;
-        background: var(--paper);
-        border-radius: 11px;
-        padding: 4px;
-        width: 200px;
-        margin-bottom: 12px;
-      }
-
-      .composer-tab {
-        flex: 1;
-        height: 32px;
-        border-radius: 8px;
-        border: none;
-        background: none;
-        font-size: 13px;
-        font-weight: 600;
-        font-family: inherit;
-        cursor: pointer;
-        color: var(--ink-soft);
-      }
-
-      .composer-tab.active {
-        background: var(--surface);
-        color: var(--ink);
-        font-weight: 700;
-        box-shadow: var(--shadow-sm);
-      }
-
-      .suggestion-chips {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-bottom: 14px;
-      }
-
-      .suggestion-chip {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        text-align: left;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 12px 14px;
-        cursor: pointer;
-        font-family: inherit;
-        color: var(--ink);
-        font-size: 13px;
-      }
-
-      .suggestion-chip:hover {
-        border-color: var(--border-input);
-      }
-
-      @media (max-width: 600px) {
-        .suggestion-chips {
-          grid-template-columns: 1fr;
-        }
-      }
 
       .composer-recording-ui {
         display: none;
@@ -1468,72 +1541,12 @@
         margin: 8px 0;
       }
 
-      .active-tag-filter {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 12px;
-        border-radius: 999px;
-        background: var(--gold-tint);
-        border: 1px solid var(--gold-tint-border);
-        color: var(--gold-dark);
-        font-size: 13px;
-        font-weight: 600;
-        margin-bottom: 12px;
-      }
-
-      .active-tag-filter button {
-        background: none;
-        border: none;
-        color: inherit;
-        cursor: pointer;
-        font-size: 14px;
-        line-height: 1;
-        padding: 0;
-      }
-
-      .entries-search-row {
-        margin-bottom: 16px;
-      }
-
-      .entries-search-input {
-        width: 100%;
-        border: 1.5px solid var(--border);
-        border-radius: 12px;
-        padding: 12px 16px;
-        font-family: inherit;
-        font-size: 14.5px;
-        color: var(--ink);
-        background: var(--surface-warm);
-      }
-
-      .entries-search-input:focus {
-        outline: none;
-        border-color: var(--gold);
-      }
-
       .form-actions {
         display: flex;
         justify-content: flex-end;
         align-items: center;
         gap: 12px;
         margin-top: 14px;
-      }
-
-      .temp-toggle {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        margin-right: auto;
-        font-size: 13px;
-        color: var(--ink-soft);
-        cursor: pointer;
-        user-select: none;
-      }
-
-      .temp-toggle input[type="checkbox"] {
-        accent-color: var(--gold);
-        cursor: pointer;
       }
 
       .btn-clear-temp {
@@ -2565,14 +2578,9 @@
            is always shown at full width when open, icon-rail state doesn't apply. */
         .sidebar.collapsed .sidebar-brand span,
         .sidebar.collapsed .sidebar-new-entry-label,
-        .sidebar.collapsed .sidebar-search-row,
         .sidebar.collapsed .sidebar-history,
         .sidebar.collapsed .sidebar-link-main span:last-child {
           display: initial;
-        }
-        .sidebar.collapsed .sidebar-open-count {
-          justify-content: flex-start;
-          padding: 9px 12px;
         }
 
         .hamburger-btn {
@@ -2585,6 +2593,14 @@
 
         .content-heading {
           font-size: 20px;
+        }
+
+        #homeView.active {
+          min-height: calc(100vh - 60px - 40px);
+        }
+
+        .home-greeting {
+          font-size: 24px;
         }
 
         /* Entry detail becomes a full-screen sheet */
@@ -2626,6 +2642,10 @@
         }
 
         .entry-form {
+          padding: 20px;
+        }
+
+        .conversation-card {
           padding: 20px;
         }
 
@@ -2947,6 +2967,14 @@
         <div class="header-content">
           <h1>Say So</h1>
           <div class="header-actions">
+            <button type="button" class="header-icon-btn" id="tempChatBtn" title="Temporary chat" aria-label="Temporary chat" aria-pressed="false">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 2h14"></path>
+                <path d="M5 22h14"></path>
+                <path d="M6 2c0 5 4 6.5 4 10s-4 5-4 10"></path>
+                <path d="M18 2c0 5-4 6.5-4 10s4 5 4 10"></path>
+              </svg>
+            </button>
             <img id="headerAvatar" class="header-avatar" alt="" style="display: none" />
             <div class="header-avatar-placeholder" id="headerAvatarPlaceholder" style="display: none"></div>
             <span class="user-email" id="userEmail"></span>
@@ -2961,7 +2989,7 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="appSidebar">
           <div class="sidebar-brand-row">
-            <div class="sidebar-brand">
+            <div class="sidebar-brand" id="sidebarBrand" title="New chat" role="button" tabindex="0" aria-label="New chat">
               <div class="sidebar-brand-dot"></div>
               <span>Say So</span>
             </div>
@@ -2975,23 +3003,12 @@
             <span class="sidebar-new-entry-label">New Entry</span>
           </button>
 
-          <div class="sidebar-search-row" id="sidebarSearchRow">
-            <input type="search" id="entrySearchInput" class="entries-search-input" placeholder="Search entries…" />
-          </div>
-
-          <button type="button" class="sidebar-open-count" id="sidebarOpenCount"></button>
-
           <div class="sayso-scroll sidebar-history" id="sidebarHistoryList"></div>
 
           <nav class="sidebar-nav">
-            <a href="#" class="sidebar-link" data-view="allEntriesView" title="All Entries">
-              <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>All Entries</span></span>
-            </a>
             <a href="#" class="sidebar-link" data-view="todoView" title="To-do List">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>To-do List</span></span>
-            </a>
-            <a href="#" class="sidebar-link" data-view="voiceNotesView" title="Voice Notes">
-              <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Voice Notes</span></span>
+              <span class="sidebar-link-badge" id="todoOpenCountBadge" style="display: none"></span>
             </a>
             <a href="#" class="sidebar-link" data-view="archiveView" title="Archive">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Archive</span></span>
@@ -3002,9 +3019,6 @@
           </nav>
 
           <div class="sidebar-bottom-cluster">
-            <button type="button" class="sidebar-link sidebar-theme-row" id="sidebarThemeRow" title="Toggle theme">
-              <span class="sidebar-link-main"><span class="sidebar-dot" id="sidebarThemeDot"></span><span id="sidebarThemeLabel">Theme</span></span>
-            </button>
             <a href="#" class="sidebar-link settings" data-view="settingsView" title="Settings">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Settings</span></span>
             </a>
@@ -3013,31 +3027,25 @@
 
         <!-- Main Canvas -->
         <main class="main-content">
+          <div class="home-rays" id="homeRays"></div>
           <button type="button" class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
           </button>
           <div class="content-inner">
-            <div class="content-heading" id="contentHeading">All Entries</div>
-            <div class="content-subheading" id="contentSubheading" style="display: none;"></div>
+            <div class="content-heading" id="contentHeading"></div>
 
             <div id="alertContainer"></div>
 
-            <!-- All Entries View -->
-            <div class="view active" id="allEntriesView">
-              <!-- Entry Composer -->
-              <div class="entry-form">
-                <div class="composer-tabs" id="composerTabs">
-                  <button type="button" class="composer-tab active" id="composerTextTabBtn" data-tab="text">Text</button>
-                  <button type="button" class="composer-tab" id="composerVoiceTabBtn" data-tab="voice">Voice</button>
+            <!-- Home View: always a fresh start, never shows past entries -->
+            <div class="view active" id="homeView">
+              <div class="home-content">
+                <div class="home-welcome">
+                  <div class="home-greeting" id="homeGreeting"></div>
+                  <div class="home-date" id="homeDate"></div>
                 </div>
 
-                <div class="suggestion-chips" id="suggestionChips">
-                  <button type="button" class="suggestion-chip" data-prefill="Talking through my day: ">🎙 Talk through your day</button>
-                  <button type="button" class="suggestion-chip" data-prefill="Need to follow up on: ">✅ Note something to follow up on</button>
-                  <button type="button" class="suggestion-chip" data-prefill="Still deciding on: ">📌 Flag a decision you're waiting on</button>
-                  <button type="button" class="suggestion-chip" data-prefill="Quick reminder: ">📝 Jot a quick reminder</button>
-                </div>
-
+                <!-- Entry Composer -->
+                <div class="entry-form">
                 <div class="composer" id="composer">
                   <div class="composer-field">
                     <textarea id="textInput" class="composer-textarea" placeholder="What's on your mind tonight?" rows="1"></textarea>
@@ -3053,7 +3061,7 @@
                       </div>
                       <div class="rec-timer" id="recTimer">0:00</div>
                     </div>
-                    <button type="button" class="btn-mic" id="micBtn" aria-label="Record voice" style="display: none;">
+                    <button type="button" class="btn-mic" id="micBtn" aria-label="Record voice">
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
@@ -3081,15 +3089,12 @@
                 </div>
 
                 <div class="form-actions">
-                  <label class="temp-toggle" id="temporaryToggleLabel">
-                    <input type="checkbox" id="temporaryToggle" />
-                    <span>Temporary</span>
-                  </label>
                   <button type="button" class="btn-clear-temp" id="clearTempBtn" title="Clear all temporary entries" style="display: none">
                     Clear temporary &times;
                   </button>
                   <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
                 </div>
+              </div>
               </div>
 
               <!-- Recording Preview -->
@@ -3122,22 +3127,20 @@
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Entries List -->
-              <div class="entries-section">
-                <div id="activeTagFilterRow"></div>
-                <div id="entriesList"></div>
-              </div>
+            <!-- Conversation View: an entry opened inline, not as a popup -->
+            <div class="view" id="conversationView">
+              <button type="button" class="conversation-back-btn" id="conversationBackBtn">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Back
+              </button>
+              <div class="conversation-card" id="conversationDetail"></div>
             </div>
 
             <!-- To-do List View -->
             <div class="view" id="todoView">
               <div id="todoList"></div>
-            </div>
-
-            <!-- Voice Notes View -->
-            <div class="view" id="voiceNotesView">
-              <div id="voiceNotesList"></div>
             </div>
 
             <!-- Archive View -->
@@ -3152,51 +3155,51 @@
 
             <!-- Settings View -->
             <div class="view" id="settingsView">
-              <div class="settings-section-label">Profile</div>
-              <div id="profileSection">
-                <div class="profile-picture-row">
-                  <img id="profilePicturePreview" class="profile-picture-img" alt="Profile picture" style="display: none" />
-                  <div class="profile-picture-placeholder" id="profilePicturePlaceholder"></div>
-                  <label class="btn-secondary" for="profilePictureInput">Change Photo</label>
-                  <input type="file" id="profilePictureInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display: none" />
+              <div class="settings-card">
+                <div class="settings-section-label">Profile</div>
+                <div id="profileSection">
+                  <div class="profile-picture-row">
+                    <img id="profilePicturePreview" class="profile-picture-img" alt="Profile picture" style="display: none" />
+                    <div class="profile-picture-placeholder" id="profilePicturePlaceholder"></div>
+                    <div class="profile-picture-actions">
+                      <label class="btn-secondary" for="profilePictureInput">Change Photo</label>
+                      <input type="file" id="profilePictureInput" accept="image/jpeg,image/png,image/webp,image/gif" style="display: none" />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="profileNicknameInput">Nickname</label>
+                    <input type="text" id="profileNicknameInput" maxlength="50" placeholder="What should we call you?" />
+                  </div>
+                  <button type="button" class="btn-submit" id="saveProfileBtn">Save Profile</button>
                 </div>
-                <div class="form-group">
-                  <label for="profileNameInput">Name</label>
-                  <input type="text" id="profileNameInput" maxlength="100" placeholder="Your name" />
-                </div>
-                <div class="form-group">
-                  <label for="profileNicknameInput">Nickname</label>
-                  <input type="text" id="profileNicknameInput" maxlength="50" placeholder="What should we call you?" />
-                </div>
-                <button type="button" class="btn-submit" id="saveProfileBtn">Save Profile</button>
               </div>
 
-              <div class="settings-section-label">Appearance</div>
-              <div class="auth-tabs" id="themeToggle">
-                <button type="button" class="auth-tab" data-theme-value="light">Light</button>
-                <button type="button" class="auth-tab" data-theme-value="dark">Dark</button>
-                <button type="button" class="auth-tab" data-theme-value="system">System</button>
+              <div class="settings-card">
+                <div class="settings-section-label">Appearance</div>
+                <div class="auth-tabs" id="themeToggle">
+                  <button type="button" class="auth-tab" data-theme-value="light">Light</button>
+                  <button type="button" class="auth-tab" data-theme-value="dark">Dark</button>
+                  <button type="button" class="auth-tab" data-theme-value="system">System</button>
+                </div>
               </div>
 
-              <div class="settings-section-label">What I know about you</div>
-              <div id="factsList"></div>
+              <div class="settings-card">
+                <div class="settings-section-label">What I know about you</div>
+                <div id="factsList"></div>
+              </div>
 
-              <div class="settings-section-label">Export Data</div>
-              <div id="exportSection">
-                <p class="settings-hint">Download all of your entries, action points, and tags as a JSON file.</p>
-                <button type="button" class="btn-secondary" id="exportDataBtn">Export as JSON</button>
+              <div class="settings-card">
+                <div class="settings-section-label">Export Data</div>
+                <div id="exportSection">
+                  <p class="settings-hint">Download all of your entries, action points, and tags as a JSON file.</p>
+                  <button type="button" class="btn-secondary" id="exportDataBtn">Export as JSON</button>
+                </div>
               </div>
             </div>
           </div>
         </main>
       </div>
     </div>
-
-    <!-- Entry Detail Overlay -->
-    <div class="detail-overlay" id="detailOverlay">
-      <div class="detail-card" id="detailCard"></div>
-    </div>
-
 
     <script>
       // ===== Configuration & State =====
@@ -3243,13 +3246,11 @@
         archivedEntries: [],
         trashedEntries: [],
         isTemporaryMode: false,
-        hasSentThisSession: false,
+        conversationReturnView: "homeView",
         sidebarCollapsed: (typeof localStorage !== "undefined" && localStorage.getItem("sayso_sidebar_collapsed") === "1") || false,
         sidebarMobileOpen: false,
 
         tags: [],
-        searchQuery: "",
-        activeTagFilter: null,
         composerTags: [],
 
         composerMode: "idle", // idle | recording | paused | previewing
@@ -3521,7 +3522,7 @@
           showGuideScreen();
         } else {
           showAppScreen();
-          loadEntries();
+          showView("homeView");
         }
       }
 
@@ -3542,7 +3543,7 @@
           // Non-fatal: worst case the guide re-shows on next login
         }
         showAppScreen();
-        loadEntries();
+        showView("homeView");
       }
 
       async function handleForgotPassword(email) {
@@ -3757,8 +3758,8 @@
         state.isOfflineProvisional = true;
         identifyUser(state.user);
         showAppScreen();
+        showView("homeView");
         document.getElementById("offlineBanner").classList.add("active");
-        loadEntries();
 
         // The moment real connectivity returns, re-run the real check so this
         // provisional state gets confirmed or corrected - never left dangling.
@@ -3875,6 +3876,7 @@
             user_id: state.user?.id,
             input_type: inputType,
             input_text: inputText,
+            title: null,
             reflection: null,
             clarifying_question: null,
             has_audio: false,
@@ -3890,8 +3892,7 @@
           renderEntries();
           closeRecordingPreview();
           clearForm();
-          state.hasSentThisSession = true;
-          renderComposerHeaderState();
+          openEntryDetail(tempEntry.id);
 
           try {
             const extractResponse = await authFetch(CONFIG.api.endpoints.extract, {
@@ -3903,6 +3904,7 @@
             const extractData = await extractResponse.json();
             const extraction = extractData.data.extraction;
 
+            tempEntry.title = extraction.title;
             tempEntry.reflection = extraction.reflection;
             tempEntry.clarifying_question = extraction.clarifyingQuestion;
             tempEntry.temp_action_points = extraction.actionPoints;
@@ -3962,9 +3964,8 @@
           showAlert("Entry created and processed successfully", "success");
           closeRecordingPreview();
           clearForm();
-          state.hasSentThisSession = true;
-          renderComposerHeaderState();
-          loadEntries();
+          await loadEntries();
+          openEntryDetail(entryId);
         } catch (error) {
           if (!(error instanceof SessionExpiredError)) {
             if (isOfflineError(error)) {
@@ -4025,22 +4026,6 @@
         return response;
       }
 
-      function renderEntriesSkeleton(count = 4) {
-        const container = document.getElementById("entriesList");
-        const card = `
-          <div class="skeleton-card">
-            <div class="skeleton-header">
-              <div class="skeleton-bar skeleton-badge"></div>
-              <div class="skeleton-bar skeleton-time"></div>
-            </div>
-            <div class="skeleton-bar skeleton-line" style="width: 92%;"></div>
-            <div class="skeleton-bar skeleton-line" style="width: 78%;"></div>
-            <div class="skeleton-bar skeleton-line" style="width: 55%;"></div>
-          </div>
-        `;
-        container.innerHTML = card.repeat(count);
-      }
-
       // Bumped on every loadEntries() call so an in-flight request that resolves
       // after a newer one (e.g. rapid search typing) can detect it's stale and
       // discard its result instead of clobbering more recent entries.
@@ -4078,20 +4063,9 @@
       }
 
       async function loadEntries() {
-        // Only show the skeleton on a cold load, not on refetches after an
-        // archive/trash/create action where entries are already on screen.
-        const isColdLoad = state.entries.filter((e) => !e.isTemporary).length === 0;
-        if (isColdLoad) {
-          renderEntriesSkeleton();
-        }
         const requestId = ++entriesRequestSeq;
-        const isUnfiltered = !state.searchQuery && !state.activeTagFilter;
         try {
-          const params = new URLSearchParams();
-          if (state.searchQuery) params.set("q", state.searchQuery);
-          if (state.activeTagFilter) params.set("tag", state.activeTagFilter);
-          const qs = params.toString();
-          const response = await authFetch(qs ? `${CONFIG.api.endpoints.entries}?${qs}` : CONFIG.api.endpoints.entries);
+          const response = await authFetch(CONFIG.api.endpoints.entries);
 
           if (!response.ok) throw new Error("Failed to load entries");
 
@@ -4101,15 +4075,11 @@
           const tempEntries = state.entries.filter((e) => e.isTemporary);
           state.entries = [...tempEntries, ...data.data.entries];
           renderEntries();
-
-          // Only the unfiltered baseline view is cached - a search/tag-filtered
-          // result isn't representative of "your journal" and would be a
-          // misleading thing to fall back to later while offline.
-          if (isUnfiltered) cacheEntries(data.data.entries);
+          cacheEntries(data.data.entries);
         } catch (error) {
           if (requestId !== entriesRequestSeq) return;
           if (!(error instanceof SessionExpiredError)) {
-            if (isOfflineError(error) && isUnfiltered) {
+            if (isOfflineError(error)) {
               const cached = readCachedEntries();
               if (cached) {
                 const tempEntries = state.entries.filter((e) => e.isTemporary);
@@ -4123,25 +4093,8 @@
               }
             }
             showAlert(`Failed to load entries: ${error.message}`, "error");
-            // Clear a stuck skeleton on failure so the user gets a retry path
-            // instead of a screen frozen on shimmering placeholders forever.
-            if (isColdLoad) renderEntriesLoadError();
           }
         }
-      }
-
-      function renderEntriesLoadError() {
-        const container = document.getElementById("entriesList");
-        container.innerHTML = `
-          <div class="empty-state">
-            <h3>Couldn't load entries</h3>
-            <p>Something went wrong. <a href="#" id="retryLoadEntriesLink">Try again</a></p>
-          </div>
-        `;
-        document.getElementById("retryLoadEntriesLink").addEventListener("click", (e) => {
-          e.preventDefault();
-          loadEntries();
-        });
       }
 
       function truncate(text, n) {
@@ -4189,7 +4142,6 @@
       }
 
       function renderProfileSection() {
-        document.getElementById("profileNameInput").value = state.user.name || "";
         document.getElementById("profileNicknameInput").value = state.user.nickname || "";
         renderAvatar(
           document.getElementById("profilePicturePreview"),
@@ -4252,77 +4204,6 @@
           )
           .join("");
         bindActionPointHandlers(container);
-      }
-
-      // ===== Voice Notes =====
-      function base64ToBlob(base64, mimeType) {
-        const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-        return new Blob([bytes], { type: mimeType });
-      }
-
-      function renderVoiceNoteCard(entry) {
-        const date = new Date(entry.created_at);
-        const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-        return `
-          <div class="entry-card" data-entry-id="${entry.id}">
-            <div class="entry-header">
-              ${badgeHtml(entry.input_type)}
-              <span class="entry-time">${timeStr}</span>
-            </div>
-            <div class="entry-input">${escapeHtml(truncate(entry.input_text, 120))}</div>
-            <div class="voice-note-player">
-              <button type="button" class="btn-load-audio" data-entry-id="${entry.id}">Play</button>
-              <audio class="voice-note-audio" style="display: none" controls></audio>
-            </div>
-          </div>
-        `;
-      }
-
-      function renderVoiceNotes() {
-        const container = document.getElementById("voiceNotesList");
-        // Note: only looks at already-loaded state.entries (capped at 50 by the API). A user with
-        // more than 50 entries could have voice notes outside this window. Not solved here.
-        const notes = state.entries.filter((e) => e.has_audio);
-
-        if (notes.length === 0) {
-          container.innerHTML = '<div class="empty-state"><h3>No voice notes yet</h3><p>Entries recorded with audio will show up here.</p></div>';
-          return;
-        }
-
-        container.innerHTML = notes.map((entry) => renderVoiceNoteCard(entry)).join("");
-
-        container.querySelectorAll(".btn-load-audio").forEach((btn) => {
-          btn.addEventListener("click", async () => {
-            const entryId = btn.dataset.entryId;
-            const audioEl = btn.nextElementSibling;
-
-            if (audioEl.src) {
-              audioEl.style.display = "";
-              btn.style.display = "none";
-              audioEl.play();
-              return;
-            }
-
-            btn.disabled = true;
-            btn.textContent = "Loading…";
-            try {
-              const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/audio`);
-              if (!response.ok) throw new Error("Failed to load audio");
-              const data = await response.json();
-              const blob = base64ToBlob(data.data.audioBase64, data.data.mimeType);
-              audioEl.src = URL.createObjectURL(blob);
-              audioEl.style.display = "";
-              btn.style.display = "none";
-              audioEl.play();
-            } catch (error) {
-              btn.disabled = false;
-              btn.textContent = "Play";
-              if (!(error instanceof SessionExpiredError)) {
-                showAlert(`Failed to load audio: ${error.message}`, "error");
-              }
-            }
-          });
-        });
       }
 
       // ===== Archive =====
@@ -4485,28 +4366,6 @@
         });
       }
 
-      function bindTagChipHandlers(root) {
-        root.querySelectorAll(".tag-chip[data-tag-id]").forEach((chip) => {
-          chip.addEventListener("click", (e) => {
-            e.stopPropagation();
-            state.activeTagFilter = chip.dataset.tagId;
-            loadEntries();
-          });
-        });
-      }
-
-      function activeTagFilterPillHtml() {
-        if (!state.activeTagFilter) return "";
-        const tag = state.tags.find((t) => t.id === state.activeTagFilter);
-        const label = tag ? tag.name : "tag";
-        return `
-          <div class="active-tag-filter">
-            Filtering by: ${escapeHtml(label)}
-            <button type="button" id="clearTagFilterBtn" aria-label="Clear tag filter">&times;</button>
-          </div>
-        `;
-      }
-
       function groupEntriesByDate(entries) {
         const groups = [];
         let currentGroupKey = null;
@@ -4550,55 +4409,12 @@
         document.getElementById("clearTempBtn").style.display = hasTemp ? "" : "none";
       }
 
+      // Renders the sidebar's recent-history list and the To-do List open-count
+      // badge from whatever state.entries currently holds - there's no
+      // dedicated "browse all entries" page, so this is the only place
+      // state.entries gets painted into the UI.
       function renderEntries() {
-        const container = document.getElementById("entriesList");
         updateClearTempButton();
-
-        const filterPill = document.getElementById("activeTagFilterRow");
-        if (filterPill) {
-          filterPill.innerHTML = activeTagFilterPillHtml();
-          const clearBtn = document.getElementById("clearTagFilterBtn");
-          if (clearBtn) {
-            clearBtn.addEventListener("click", () => {
-              state.activeTagFilter = null;
-              loadEntries();
-            });
-          }
-        }
-
-        if (state.entries.length === 0) {
-          const emptyMessage = state.searchQuery || state.activeTagFilter
-            ? '<div class="empty-state"><h3>No matching entries</h3><p>Try a different search or clear the tag filter</p></div>'
-            : '<div class="empty-state"><h3>No entries yet</h3><p>Create your first entry to get started</p></div>';
-          container.innerHTML = emptyMessage;
-          return;
-        }
-
-        const groups = groupEntriesByDateSemantic(state.entries);
-
-        container.innerHTML = groups
-          .map(
-            (group) => `
-          <div class="entry-date-group">
-            <span class="entry-date-label">${group.label}</span>
-          </div>
-          ${group.entries.map((entry) => renderEntryCard(entry, { archiveAction: "archive", trashAction: "trash" })).join("")}
-        `
-          )
-          .join("");
-
-        container.querySelectorAll(".entry-card").forEach((card) => {
-          card.addEventListener("click", (e) => {
-            if (e.target.closest(".action-point") || e.target.closest(".entry-actions") || e.target.closest(".tag-chip")) return;
-            openEntryDetail(card.dataset.entryId);
-          });
-        });
-
-        bindActionPointHandlers(container);
-        bindArchiveHandlers(container);
-        bindTrashHandlers(container);
-        bindTagChipHandlers(container);
-
         renderSidebarHistory();
         renderSidebarOpenCount();
       }
@@ -4621,12 +4437,14 @@
         container.innerHTML = groups
           .map(
             (group) => `
-          <div class="sidebar-history-group-label">${group.label}</div>
+          <div class="sidebar-history-group-label">${escapeHtml(group.label)}</div>
           ${group.entries
             .map((entry) => {
               const date = new Date(entry.created_at);
               const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-              const snippet = truncate(entry.input_text, 42);
+              // Entries created before the AI-title feature (or still mid-extraction)
+              // have no title yet - fall back to a truncated snippet of the raw text.
+              const snippet = entry.title || truncate(entry.input_text, 42);
               return `
               <div class="sidebar-history-item" data-entry-id="${entry.id}">
                 <div class="sidebar-history-item-text">${escapeHtml(snippet)}</div>
@@ -4640,8 +4458,10 @@
           .join("");
         container.querySelectorAll(".sidebar-history-item").forEach((item) => {
           item.addEventListener("click", () => {
-            showView("allEntriesView");
-            openEntryDetail(item.dataset.entryId);
+            // The history list is visible from every view, so "wherever I
+            // clicked from" isn't meaningful context to return to (e.g.
+            // Settings) - always send Back/Escape home instead.
+            openEntryDetail(item.dataset.entryId, { returnView: "homeView" });
             closeSidebarDrawer();
           });
         });
@@ -4660,10 +4480,11 @@
       }
 
       function renderSidebarOpenCount() {
-        const el = document.getElementById("sidebarOpenCount");
+        const el = document.getElementById("todoOpenCountBadge");
         if (!el) return;
         const count = computeOpenActionPointCount();
-        el.textContent = count === 0 ? "All caught up" : `${count} thing${count === 1 ? "" : "s"} still open`;
+        el.textContent = String(count);
+        el.style.display = count === 0 ? "none" : "";
       }
 
       function badgeHtml(inputType) {
@@ -5147,7 +4968,7 @@
       // replacing them, so silently re-running it on every edit would create
       // duplicates; this lets the user decide instead).
       function showReExtractPrompt(entryId, newText) {
-        const promptRow = document.querySelector(`#detailCard[data-entry-id="${entryId}"] #reExtractPromptRow`);
+        const promptRow = document.querySelector(`#conversationDetail[data-entry-id="${entryId}"] #reExtractPromptRow`);
         if (!promptRow) return;
         promptRow.innerHTML = `
           <div class="re-extract-prompt">
@@ -5185,19 +5006,31 @@
         });
       }
 
-      function openEntryDetail(entryId) {
+      // Opens an entry inline in the main content area (replacing whichever
+      // view is currently showing), not as a popup - matches how Claude/ChatGPT
+      // load a past conversation into the main pane. Remembers which view was
+      // active beforehand so the Back button returns there instead of always
+      // going home.
+      function openEntryDetail(entryId, { returnView } = {}) {
         const entry = state.entries.find((e) => e.id === entryId);
         if (!entry) return;
+
+        if (returnView) {
+          state.conversationReturnView = returnView;
+        } else {
+          const previousView = document.querySelector(".view.active");
+          if (previousView && previousView.id !== "conversationView") {
+            state.conversationReturnView = previousView.id;
+          }
+        }
 
         const date = new Date(entry.created_at);
         const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
         const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 
-        const card = document.getElementById("detailCard");
+        const card = document.getElementById("conversationDetail");
         card.dataset.entryId = entryId;
         card.innerHTML = `
-          <button class="detail-close" id="detailCloseBtn">&times;</button>
-
           <div class="detail-header">
             ${badgeHtml(entry.input_type)}
             <span class="detail-datetime">${dateStr} &middot; ${timeStr}</span>
@@ -5221,8 +5054,7 @@
           bindDetailTextEditor(card, entryId);
         }
 
-        document.getElementById("detailCloseBtn").addEventListener("click", closeEntryDetail);
-        document.getElementById("detailOverlay").classList.add("active");
+        showView("conversationView");
 
         if (entry.clarifying_question) {
           loadChatThread(entryId);
@@ -5237,7 +5069,16 @@
       }
 
       function closeEntryDetail() {
-        document.getElementById("detailOverlay").classList.remove("active");
+        showView(state.conversationReturnView || "homeView");
+      }
+
+      // Shared by the sidebar's "New Entry" button and the brand/logo click:
+      // both start a fresh "new chat", returning to the home view.
+      function startNewChat({ focusInput = false } = {}) {
+        showView("homeView");
+        clearForm();
+        if (focusInput) document.getElementById("textInput").focus();
+        if (isMobileViewport()) closeSidebarDrawer();
       }
 
       // ===== Clarifying Question Chat =====
@@ -5740,58 +5581,91 @@
       }
 
       const VIEW_HEADINGS = {
-        allEntriesView: "All Entries",
         todoView: "To-do List",
-        voiceNotesView: "Voice Notes",
         archiveView: "Archive",
         trashView: "Trash",
         settingsView: "Settings",
       };
 
       const VIEW_LOADERS = {
+        homeView: loadEntries,
         todoView: loadTodoList,
-        voiceNotesView: renderVoiceNotes,
         archiveView: loadArchivedEntries,
         trashView: loadTrashedEntries,
         settingsView: loadSettings,
       };
 
+      // Home is always a fresh start: never shows past entries, and the
+      // composer only lives here. Every other view hides the composer and
+      // shows a normal heading instead of the greeting block.
       function showView(viewId) {
         document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === viewId));
         document.querySelectorAll(".sidebar-link[data-view]").forEach((l) => l.classList.toggle("active", l.dataset.view === viewId));
-        document.querySelector(".entry-form").style.display = viewId === "allEntriesView" ? "" : "none";
-        if (viewId === "allEntriesView") {
-          renderComposerHeaderState();
+        const heading = document.getElementById("contentHeading");
+        if (viewId === "homeView" || viewId === "conversationView") {
+          heading.style.display = "none";
+          if (viewId === "homeView") {
+            renderHomeView();
+          }
         } else {
-          document.getElementById("contentHeading").textContent = VIEW_HEADINGS[viewId];
-          document.getElementById("contentSubheading").style.display = "none";
+          heading.style.display = "";
+          heading.textContent = VIEW_HEADINGS[viewId] ?? "";
         }
         VIEW_LOADERS[viewId]?.();
+
+        // The rays are a WebGL animation loop - only run it while home is
+        // actually the visible view, same lifecycle as the auth screen's rays.
+        if (viewId === "homeView") {
+          if (window.restartHomeRays) window.restartHomeRays();
+        } else if (window.stopHomeRays) {
+          window.stopHomeRays();
+        }
       }
 
-      function greetingText() {
+      const GREETINGS = {
+        morning: [
+          "Good Morning, {name} ☀️",
+          "Ready to make today count?",
+          "Hope you're having a great morning.",
+          "Let's build something amazing today.",
+        ],
+        afternoon: [
+          "Good Afternoon, {name} 👋",
+          "Welcome back.",
+          "Nice to see you again.",
+          "What are we working on today?",
+          "Ready for another productive session?",
+        ],
+        evening: [
+          "Good Evening, {name} 🌙",
+          "Burning the midnight oil?",
+          "Hope your day has been going well.",
+          "Let's finish today strong.",
+        ],
+      };
+
+      function pickGreeting() {
         const hour = new Date().getHours();
-        if (hour < 5) return "Still up? 🌙";
-        if (hour < 12) return "Good morning 👋";
-        if (hour < 18) return "Good afternoon 👋";
-        return "Good evening 👋";
+        const bucket = hour < 12 ? "morning" : hour < 18 ? "afternoon" : "evening";
+        const pool = GREETINGS[bucket];
+        const template = pool[Math.floor(Math.random() * pool.length)];
+        return template.replace("{name}", displayName(state.user));
       }
 
-      // Drives the home view's greeting/subtitle/suggestion-chips, all of
-      // which flip together the moment the user sends their first entry
-      // this session (not persisted - "this session" means this page load).
-      function renderComposerHeaderState() {
-        const heading = document.getElementById("contentHeading");
-        const subheading = document.getElementById("contentSubheading");
-        const chips = document.getElementById("suggestionChips");
-        if (!heading || !subheading) return;
-
-        heading.textContent = greetingText();
-        subheading.style.display = "";
-        subheading.textContent = state.hasSentThisSession
-          ? "Whenever you're ready for the next one."
-          : "What's on your mind today?";
-        if (chips) chips.style.display = state.hasSentThisSession ? "none" : "";
+      // Picks a new greeting + date each time the home view is shown, so it
+      // rotates across visits without jittering mid-visit.
+      function renderHomeView() {
+        const greeting = document.getElementById("homeGreeting");
+        const dateEl = document.getElementById("homeDate");
+        if (greeting) greeting.textContent = pickGreeting();
+        if (dateEl) {
+          dateEl.textContent = new Date().toLocaleDateString(undefined, {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+        }
       }
 
       function switchAuthTab(tabType) {
@@ -5847,9 +5721,8 @@
         state.composerTags = [];
         renderComposerTagChips();
         document.getElementById("submitBtn").disabled = true;
+        document.getElementById("composer").classList.remove("has-text");
         state.currentInputType = "text";
-        document.getElementById("composerTextTabBtn")?.classList.add("active");
-        document.getElementById("composerVoiceTabBtn")?.classList.remove("active");
       }
 
       function escapeHtml(text) {
@@ -5880,10 +5753,11 @@
         localStorage.setItem("theme", value);
         applyTheme(value);
         renderThemeToggle();
-        // The auth-screen light rays are tinted from the theme's --gold
-        // variable, so switching themes needs to re-tint them too, not just
-        // the rest of the UI.
+        // The auth-screen and home-screen light rays are tinted from the
+        // theme's --gold variable, so switching themes needs to re-tint them
+        // too, not just the rest of the UI.
         if (window.restartAuthRays) window.restartAuthRays();
+        if (window.restartHomeRays) window.restartHomeRays();
         // Same for any mounted curved-input fields (signup wizard) - each
         // instance registers a retint callback with curved-input.js.
         if (window.curvedInputRetintCallbacks) window.curvedInputRetintCallbacks.forEach((fn) => fn());
@@ -5894,29 +5768,6 @@
         document.querySelectorAll("#themeToggle .auth-tab").forEach((btn) => {
           btn.classList.toggle("active", btn.dataset.themeValue === current);
         });
-        renderSidebarThemeRow(current);
-      }
-
-      // The sidebar's theme row is a compact click-to-cycle shortcut on top
-      // of the same setTheme()/localStorage mechanism as Settings' full
-      // 3-way Light/Dark/System control - it does not replace or duplicate
-      // that control, and deliberately preserves "System" as one of the
-      // cycle stops rather than collapsing to a 2-way toggle, so a user on
-      // System mode (following the OS) never gets silently switched off it.
-      const THEME_CYCLE = ["light", "dark", "system"];
-
-      function renderSidebarThemeRow(current) {
-        const dot = document.getElementById("sidebarThemeDot");
-        const label = document.getElementById("sidebarThemeLabel");
-        if (!dot || !label) return;
-        const labels = { light: "Light mode", dark: "Dark mode", system: "System theme" };
-        label.textContent = labels[current] || "Theme";
-      }
-
-      function cycleSidebarTheme() {
-        const current = localStorage.getItem("theme") || "system";
-        const nextIndex = (THEME_CYCLE.indexOf(current) + 1) % THEME_CYCLE.length;
-        setTheme(THEME_CYCLE[nextIndex]);
       }
 
       // ===== Sidebar collapse/expand (desktop) + mobile drawer =====
@@ -6017,7 +5868,9 @@
         document.getElementById("finishRecordBtn").addEventListener("click", finishRecording);
         document.getElementById("textInput").addEventListener("input", (e) => {
           autoGrowTextarea();
-          document.getElementById("submitBtn").disabled = !e.target.value.trim();
+          const hasText = !!e.target.value.trim();
+          document.getElementById("submitBtn").disabled = !hasText;
+          document.getElementById("composer").classList.toggle("has-text", hasText);
         });
         document.getElementById("textInput").addEventListener("keydown", (e) => {
           if (e.key === "Enter" && !e.shiftKey && state.currentInputType === "text" && state.composerMode === "idle") {
@@ -6026,53 +5879,18 @@
           }
         });
 
-        // Composer Text/Voice tabs - Voice triggers the same recording flow
-        // that used to start from the always-visible mic button; Text just
-        // resets composerMode if a recording was in progress.
-        document.getElementById("composerTextTabBtn").addEventListener("click", () => {
-          state.currentInputType = "text";
-          document.getElementById("composerTextTabBtn").classList.add("active");
-          document.getElementById("composerVoiceTabBtn").classList.remove("active");
-          if (state.composerMode !== "idle" && state.composerMode !== "previewing") {
-            cancelRecording();
-          }
-        });
-        document.getElementById("composerVoiceTabBtn").addEventListener("click", () => {
-          state.currentInputType = "voice";
-          document.getElementById("composerVoiceTabBtn").classList.add("active");
-          document.getElementById("composerTextTabBtn").classList.remove("active");
-          if (state.composerMode === "idle") startRecording();
-        });
-
-        // Suggestion chips: prefill the composer, don't submit
-        document.querySelectorAll(".suggestion-chip").forEach((chip) => {
-          chip.addEventListener("click", () => {
-            const textInput = document.getElementById("textInput");
-            textInput.value = chip.dataset.prefill;
-            autoGrowTextarea();
-            document.getElementById("submitBtn").disabled = !textInput.value.trim();
-            textInput.focus();
-            textInput.setSelectionRange(textInput.value.length, textInput.value.length);
-          });
-        });
-
-        // Entry search (debounced, server-side)
-        document.getElementById("entrySearchInput").addEventListener(
-          "input",
-          debounce((e) => {
-            state.searchQuery = e.target.value.trim();
-            loadEntries();
-          }, 300)
-        );
-
         // Composer tag input
         bindComposerTagInput();
 
         // Form actions (plain-text path)
         document.getElementById("submitBtn").addEventListener("click", () => submitEntry());
         document.getElementById("cancelBtn").addEventListener("click", clearForm);
-        document.getElementById("temporaryToggle").addEventListener("change", (e) => {
-          state.isTemporaryMode = e.target.checked;
+        document.getElementById("tempChatBtn").addEventListener("click", () => {
+          state.isTemporaryMode = !state.isTemporaryMode;
+          const btn = document.getElementById("tempChatBtn");
+          btn.classList.toggle("active", state.isTemporaryMode);
+          btn.setAttribute("aria-pressed", String(state.isTemporaryMode));
+          btn.title = state.isTemporaryMode ? "Temporary chat (on) — entries won't be saved" : "Temporary chat";
         });
         document.getElementById("clearTempBtn").addEventListener("click", () => {
           state.entries = state.entries.filter((e) => !e.isTemporary);
@@ -6126,14 +5944,15 @@
           enterApp();
         });
 
-        // New Entry (sidebar button, desktop + mobile): scrolls to the
-        // composer and focuses it, closing the mobile drawer if it was open.
-        document.getElementById("newEntryBtn").addEventListener("click", () => {
-          showView("allEntriesView");
-          const form = document.querySelector(".entry-form");
-          form.scrollIntoView({ behavior: "smooth", block: "start" });
-          document.getElementById("textInput").focus();
-          if (isMobileViewport()) closeSidebarDrawer();
+        // New Entry button and brand/logo both start a fresh "new chat":
+        // return to the home view, closing the mobile drawer if it was open.
+        document.getElementById("newEntryBtn").addEventListener("click", () => startNewChat({ focusInput: true }));
+        document.getElementById("sidebarBrand").addEventListener("click", () => startNewChat());
+        document.getElementById("sidebarBrand").addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            startNewChat();
+          }
         });
 
         // Sidebar collapse (desktop) / drawer (mobile)
@@ -6147,16 +5966,6 @@
         });
         document.getElementById("hamburgerBtn").addEventListener("click", openSidebarDrawer);
         document.getElementById("sidebarBackdrop").addEventListener("click", closeSidebarDrawer);
-
-        // Sidebar theme row: cycles light -> dark -> system, same setTheme() mechanism as Settings
-        document.getElementById("sidebarThemeRow").addEventListener("click", cycleSidebarTheme);
-
-        // Sidebar "N things still open" - scrolls to the entries feed
-        document.getElementById("sidebarOpenCount").addEventListener("click", () => {
-          showView("allEntriesView");
-          document.getElementById("entriesList").scrollIntoView({ behavior: "smooth", block: "start" });
-          if (isMobileViewport()) closeSidebarDrawer();
-        });
 
         // Guide screen -> guided first entry
         document.getElementById("guideStartBtn").addEventListener("click", () => {
@@ -6181,13 +5990,13 @@
           trackEvent("onboarding_first_entry_skipped");
         });
 
-        // Entry detail overlay: close on scrim click or Escape
-        document.getElementById("detailOverlay").addEventListener("click", (e) => {
-          if (e.target.id === "detailOverlay") closeEntryDetail();
-        });
+        // Conversation view: Back button, or Escape while it's open
+        document.getElementById("conversationBackBtn").addEventListener("click", closeEntryDetail);
         document.addEventListener("keydown", (e) => {
           if (e.key === "Escape") {
-            closeEntryDetail();
+            if (document.getElementById("conversationView").classList.contains("active")) {
+              closeEntryDetail();
+            }
             closeSidebarDrawer();
             if (state.composerMode === "previewing") closeRecordingPreview();
           }
@@ -6204,19 +6013,17 @@
 
         // Save Profile
         document.getElementById("saveProfileBtn").addEventListener("click", async () => {
-          const name = document.getElementById("profileNameInput").value;
           const nickname = document.getElementById("profileNicknameInput").value;
           try {
             const response = await authFetch(CONFIG.api.endpoints.profile, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ name, nickname }),
+              body: JSON.stringify({ nickname }),
             });
             const data = await response.json();
             if (!response.ok || !data.success) {
               throw new Error(data.error?.message || "Failed to save profile");
             }
-            state.user.name = data.data.user.name;
             state.user.nickname = data.data.user.nickname;
             document.getElementById("userEmail").textContent = displayName(state.user);
             renderAvatar(
@@ -6336,7 +6143,6 @@
         } else {
           checkAuth();
         }
-        showView("allEntriesView");
       });
 
       // Registers the app-shell service worker so repeat visits load
@@ -6399,6 +6205,51 @@
       window.restartAuthRays = () => {
         if (document.getElementById("authScreen")?.classList.contains("active")) {
           startAuthRays();
+        }
+      };
+
+      let destroyHomeRays = null;
+
+      function startHomeRays() {
+        if (destroyHomeRays) {
+          destroyHomeRays();
+          destroyHomeRays = null;
+        }
+        const container = document.getElementById("homeRays");
+        if (!container) return;
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+        const goldHex = getComputedStyle(document.documentElement).getPropertyValue("--gold").trim();
+
+        destroyHomeRays = initLightRays(container, {
+          raysOrigin: "top-center",
+          raysColor: goldHex || "#b8873a",
+          raysSpeed: 0.9,
+          lightSpread: 0.65,
+          rayLength: 1.4,
+          fadeDistance: 1.1,
+          saturation: 1.3,
+          followMouse: true,
+          mouseInfluence: 0.12,
+          noiseAmount: 0.06,
+          distortion: 0.04,
+        });
+      }
+
+      // Exposed so showView('homeView') (in the classic script) can (re)start
+      // the rays each time home is shown, and setTheme() can re-tint them
+      // immediately on a theme switch - same bridging pattern as
+      // window.restartAuthRays.
+      window.restartHomeRays = () => {
+        if (document.getElementById("homeView")?.classList.contains("active")) {
+          startHomeRays();
+        }
+      };
+
+      window.stopHomeRays = () => {
+        if (destroyHomeRays) {
+          destroyHomeRays();
+          destroyHomeRays = null;
         }
       };
 

@@ -75,6 +75,7 @@ export default async function handler(req, res) {
     let createdFacts = extraction.memorableFacts;
     if (entryId) {
       updatedEntry = await entries.updateReflection(entryId, userId, {
+        title: extraction.title,
         reflection: extraction.reflection,
         clarifyingQuestion: extraction.clarifyingQuestion,
       });

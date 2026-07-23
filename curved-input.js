@@ -25,6 +25,14 @@ const round2 = (n) => Math.round(n * 100) / 100;
 
 // Maps a flat (u along the bar, v offset from centerline) coordinate onto a
 // circular arc with the given sagitta (bend, in px).
+//
+// The end caps are perpendicular to the curve's tangent at u0/u1, so on a
+// bent bar they lean outward - the top/bottom corners at each end don't sit
+// at the same x as the bar's own edge, they splay out past it. Left
+// unaccounted for, those corners land outside a viewBox sized to just the
+// bar's flat width/height and get clipped, which is what made the ends look
+// sheared/broken. padX below is exactly that splay, added as canvas margin
+// (and folded into point()'s output) so the full rotated cap always fits.
 function buildGeometry(width, bend, thickness) {
   const W = Math.max(width, 1);
   const T = thickness;
@@ -39,6 +47,7 @@ function buildGeometry(width, bend, thickness) {
     return {
       straight: true,
       W,
+      canvasW: W,
       T,
       svgH,
       point: (u, v) => [u, midY + v],
@@ -52,15 +61,26 @@ function buildGeometry(width, bend, thickness) {
   const cy = apexY + dir * R;
   const phi = Math.asin(Math.min(1, W / (2 * R)));
 
+  // Horizontal splay of the end-cap corners (v = -T/2 and v = +T/2) beyond
+  // the bar's own x = 0 / x = W edges. W (and the u domain callers use for
+  // text layout/caret placement) stays the original bar width - only the
+  // canvas (canvasW, and point()'s x output) grows to fit the splay, so u=0
+  // and u=W still land exactly on the bar's own edges, just shifted right by
+  // padX inside the wider canvas.
+  const rhoAtEdge = R + dir * (T / 2);
+  const edgeX = rhoAtEdge * Math.sin(phi);
+  const padX = Math.max(0, edgeX - W / 2);
+
   return {
     straight: false,
     W,
+    canvasW: W + padX * 2,
     T,
     svgH,
     point: (u, v) => {
       const th = ((u - cx) / cx) * phi;
       const rho = R - dir * v;
-      return [cx + rho * Math.sin(th), cy - dir * rho * Math.cos(th)];
+      return [padX + cx + rho * Math.sin(th), cy - dir * rho * Math.cos(th)];
     },
     angleAt: (u) => dir * ((u - cx) / cx) * phi * (180 / Math.PI),
   };
@@ -196,9 +216,9 @@ export function initCurvedInput(container, options = {}) {
     const width = container.clientWidth || 300;
     const geom = buildGeometry(width, opts.bend, opts.height);
 
-    svg.setAttribute("width", geom.W);
+    svg.setAttribute("width", round2(geom.canvasW));
     svg.setAttribute("height", round2(geom.svgH));
-    svg.setAttribute("viewBox", `0 0 ${geom.W} ${round2(geom.svgH)}`);
+    svg.setAttribute("viewBox", `0 0 ${round2(geom.canvasW)} ${round2(geom.svgH)}`);
 
     const strokeColor = errorActive ? theme.error : focused ? theme.gold : theme.border;
     const strokeWidth = focused || errorActive ? 2 : 1.5;
