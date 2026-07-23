@@ -14,9 +14,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { password, timezone } = req.body;
+    const { password, timezone, age: rawAge } = req.body;
     const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
     const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+    // Optional, no validation/enforcement - just coerce to an integer or null
+    // if it's missing, blank, or not a real number.
+    const age =
+      rawAge !== null && rawAge !== undefined && rawAge !== "" && Number.isFinite(Number(rawAge))
+        ? Math.trunc(Number(rawAge))
+        : null;
 
     // Validate input
     if (!email || !password) {
@@ -82,6 +88,7 @@ export default async function handler(req, res) {
     const user = await users.create(email, passwordHash, {
       name: name || null,
       timezone: typeof timezone === "string" && timezone.length <= 100 ? timezone : null,
+      age,
     });
 
     // Create JWT token
@@ -98,6 +105,7 @@ export default async function handler(req, res) {
           email: user.email,
           name: user.name,
           timezone: user.timezone,
+          age: user.age,
           onboardingCompletedAt: user.onboarding_completed_at,
           createdAt: user.created_at,
         },

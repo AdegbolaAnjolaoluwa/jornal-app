@@ -3,7 +3,7 @@
  * GET /api/entries/archived - List the current user's archived entries
  * GET /api/entries/trash - List the current user's trashed entries
  * POST /api/entries - Create a new entry
- * PATCH /api/entries/:id - Update an entry's reflection/clarifying question
+ * PATCH /api/entries/:id - Update an entry's text, reflection, or clarifying question
  * DELETE /api/entries/:id - Permanently delete an entry (used from Trash only)
  * GET /api/entries/:id/messages - List the clarifying-question chat thread for an entry
  * POST /api/entries/:id/messages - Post a user reply and get the AI's response
@@ -16,7 +16,7 @@
  */
 
 import zlib from "zlib";
-import { entries, actionPoints as apTable, entryMessages } from "../lib/db.js";
+import { entries, actionPoints as apTable, entryMessages, tags as tagsTable } from "../lib/db.js";
 import { requireAuth } from "../lib/auth.js";
 import { continueConversation } from "../lib/ai.js";
 import url from "url";
@@ -87,8 +87,15 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: "Method not allowed" });
     }
 
+    if (subResource === "tags" && entryId) {
+      if (req.method === "PATCH") {
+        return handleUpdateEntryTags(entryId, userId, req, res);
+      }
+      return res.status(405).json({ error: "Method not allowed" });
+    }
+
     if (req.method === "GET") {
-      return handleGetEntries(userId, res);
+      return handleGetEntries(userId, req, res);
     }
 
     if (req.method === "POST") {
@@ -134,15 +141,31 @@ async function attachActionPoints(userEntries, userId) {
   return userEntries;
 }
 
-async function handleGetEntries(userId, res) {
+async function attachTags(userEntries, userId) {
+  const entryIds = userEntries.map((e) => e.id);
+  const entryTags = await tagsTable.findByEntryIds(entryIds, userId);
+  const tagsByEntry = new Map();
+  for (const t of entryTags) {
+    if (!tagsByEntry.has(t.entry_id)) tagsByEntry.set(t.entry_id, []);
+    tagsByEntry.get(t.entry_id).push({ id: t.id, name: t.name });
+  }
+  for (const entry of userEntries) {
+    entry.tags = tagsByEntry.get(entry.id) || [];
+  }
+  return userEntries;
+}
+
+async function handleGetEntries(userId, req, res) {
   try {
+    const { q, tag } = url.parse(req.url, true).query;
     const limit = 50;
     const offset = 0;
 
-    const userEntries = await entries.findByUserId(userId, limit, offset);
+    const userEntries = await entries.findByUserId(userId, { limit, offset, q: q || null, tagId: tag || null });
     const total = await entries.countByUserId(userId);
 
     await attachActionPoints(userEntries, userId);
+    await attachTags(userEntries, userId);
 
     return res.status(200).json({
       success: true,
@@ -168,6 +191,7 @@ async function handleGetArchivedEntries(userId, res) {
   try {
     const userEntries = await entries.findArchivedByUserId(userId);
     await attachActionPoints(userEntries, userId);
+    await attachTags(userEntries, userId);
 
     return res.status(200).json({
       success: true,
@@ -186,6 +210,7 @@ async function handleGetTrashedEntries(userId, res) {
   try {
     const userEntries = await entries.findTrashedByUserId(userId);
     await attachActionPoints(userEntries, userId);
+    await attachTags(userEntries, userId);
 
     return res.status(200).json({
       success: true,
@@ -229,6 +254,14 @@ async function handleCreateEntry(userId, req, res) {
 
     const entry = await entries.create(userId, inputType, inputText);
 
+    const { tags: tagNames } = req.body;
+    if (Array.isArray(tagNames) && tagNames.length > 0) {
+      const cleaned = [...new Set(tagNames.map((t) => String(t).trim()).filter(Boolean))].slice(0, 20);
+      entry.tags = cleaned.length > 0 ? await tagsTable.setForEntry(entry.id, userId, cleaned) : [];
+    } else {
+      entry.tags = [];
+    }
+
     return res.status(201).json({
       success: true,
       data: { entry },
@@ -244,7 +277,7 @@ async function handleCreateEntry(userId, req, res) {
 
 async function handleUpdateEntry(entryId, userId, req, res) {
   try {
-    const { reflection, clarifyingQuestion } = req.body;
+    const { reflection, clarifyingQuestion, inputText } = req.body;
 
     // Verify entry exists and belongs to user
     const entry = await entries.findById(entryId, userId);
@@ -255,9 +288,24 @@ async function handleUpdateEntry(entryId, userId, req, res) {
       });
     }
 
+    let trimmedInputText;
+    if (inputText !== undefined) {
+      trimmedInputText = inputText.trim();
+      if (!trimmedInputText) {
+        return res.status(422).json({
+          success: false,
+          error: {
+            message: "inputText cannot be empty",
+            fields: { inputText: "Entry text cannot be empty" },
+          },
+        });
+      }
+    }
+
     const updated = await entries.updateReflection(entryId, userId, {
       reflection: reflection || null,
       clarifyingQuestion: clarifyingQuestion || null,
+      ...(trimmedInputText !== undefined ? { inputText: trimmedInputText } : {}),
     });
 
     return res.status(200).json({
@@ -426,6 +474,41 @@ async function handleTrashEntry(entryId, userId, req, res) {
     return res.status(500).json({
       success: false,
       error: { message: err.message || "Failed to update trash state" },
+    });
+  }
+}
+
+async function handleUpdateEntryTags(entryId, userId, req, res) {
+  try {
+    const { tags: tagNames } = req.body;
+
+    if (!Array.isArray(tagNames)) {
+      return res.status(422).json({
+        success: false,
+        error: { message: "tags (array of strings) is required" },
+      });
+    }
+
+    const entry = await entries.findById(entryId, userId);
+    if (!entry) {
+      return res.status(404).json({
+        success: false,
+        error: { message: "Entry not found" },
+      });
+    }
+
+    const cleaned = [...new Set(tagNames.map((t) => String(t).trim()).filter(Boolean))].slice(0, 20);
+    const updatedTags = await tagsTable.setForEntry(entryId, userId, cleaned);
+
+    return res.status(200).json({
+      success: true,
+      data: { tags: updatedTags },
+    });
+  } catch (err) {
+    console.error("Update entry tags error:", err);
+    return res.status(500).json({
+      success: false,
+      error: { message: err.message || "Failed to update tags" },
     });
   }
 }

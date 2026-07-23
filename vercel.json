@@ -10,6 +10,7 @@
     { "source": "/api/entries/:id/audio", "destination": "/api/entries" },
     { "source": "/api/entries/:id/archive", "destination": "/api/entries" },
     { "source": "/api/entries/:id/trash", "destination": "/api/entries" },
+    { "source": "/api/entries/:id/tags", "destination": "/api/entries" },
     { "source": "/api/entries/archived", "destination": "/api/entries" },
     { "source": "/api/entries/trash", "destination": "/api/entries" },
     { "source": "/api/entries/:id", "destination": "/api/entries" }

@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Say So: A private space to think out loud</title>
     <meta name="description" content="Capture what's on your mind by voice or text. Say So reflects it back, pulls out action points, and keeps everything private." />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1a1a1a" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -282,6 +286,30 @@
         margin-top: 1px;
       }
 
+      .demo-action {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .demo-action.visible {
+        opacity: 1;
+      }
+
+      .demo-cursor {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        background: currentColor;
+        margin-left: 1px;
+        vertical-align: -0.1em;
+        animation: demo-blink 0.9s step-end infinite;
+      }
+
+      @keyframes demo-blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+
       .features {
         max-width: 1080px;
         margin: 0 auto;
@@ -470,24 +498,14 @@
           <span class="demo-dot"></span>
           <span class="demo-card-label">New entry</span>
         </div>
-        <p class="demo-input">
-          "Had a good call with the design team, need to send them the updated brief by Friday. Also should follow
-          up with Priya about the payments migration."
-        </p>
+        <p class="demo-input" id="demoInput"></p>
         <div class="demo-reflection">
           <span class="demo-reflection-label">Reflection</span>
-          Sounds like a productive one, and good that the Priya thread is still moving.
+          <span id="demoReflection"></span>
         </div>
         <div class="demo-actions">
           <span class="demo-actions-label">Action points</span>
-          <div class="demo-action">
-            <span class="demo-checkbox"></span>
-            <span>Send the updated brief to the design team by Friday</span>
-          </div>
-          <div class="demo-action">
-            <span class="demo-checkbox"></span>
-            <span>Follow up with Priya about the payments migration</span>
-          </div>
+          <div id="demoActionList"></div>
         </div>
       </div>
     </section>
@@ -553,6 +571,137 @@
 
     <script>
       document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+    <script>
+      (function () {
+        var examples = [
+          {
+            input:
+              "Had a good call with the design team, need to send them the updated brief by Friday. Also should follow up with Priya about the payments migration.",
+            reflection:
+              "Sounds like a productive one, and good that the Priya thread is still moving.",
+            actions: [
+              "Send the updated brief to the design team by Friday",
+              "Follow up with Priya about the payments migration",
+            ],
+          },
+          {
+            input:
+              "Barely slept, kept thinking about the client renewal call tomorrow. Should probably prep talking points tonight and also book that dentist appointment I've been putting off.",
+            reflection:
+              "A restless night, but naming the renewal call as the source is a good first step.",
+            actions: [
+              "Prep talking points for tomorrow's client renewal call",
+              "Book the dentist appointment",
+            ],
+          },
+          {
+            input:
+              "Went for a run this morning, felt great. Want to keep it up 3x a week. Also need to text mom back and pick up a birthday gift for Sam before Saturday.",
+            reflection:
+              "Nice momentum on the running, and good that you're staying on top of things for the people you care about.",
+            actions: [
+              "Run 3x this week",
+              "Text mom back",
+              "Pick up a birthday gift for Sam before Saturday",
+            ],
+          },
+        ];
+
+        var inputEl = document.getElementById("demoInput");
+        var reflectionEl = document.getElementById("demoReflection");
+        var actionListEl = document.getElementById("demoActionList");
+        if (!inputEl || !reflectionEl || !actionListEl) return;
+
+        var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var exampleIndex = 0;
+        var runToken = 0;
+
+        function typeInto(el, text, speed, token, done) {
+          el.textContent = "";
+          var cursor = document.createElement("span");
+          cursor.className = "demo-cursor";
+          var i = 0;
+          function step() {
+            if (token !== runToken) return;
+            if (i <= text.length) {
+              el.textContent = text.slice(0, i);
+              el.appendChild(cursor);
+              i++;
+              setTimeout(step, speed);
+            } else {
+              cursor.remove();
+              if (done) done();
+            }
+          }
+          step();
+        }
+
+        function showStatic(example) {
+          inputEl.textContent = '"' + example.input + '"';
+          reflectionEl.textContent = example.reflection;
+          actionListEl.innerHTML = "";
+          example.actions.forEach(function (text) {
+            var row = document.createElement("div");
+            row.className = "demo-action visible";
+            row.innerHTML = '<span class="demo-checkbox"></span><span>' + text + "</span>";
+            actionListEl.appendChild(row);
+          });
+        }
+
+        function runExample(idx, token) {
+          var example = examples[idx];
+          inputEl.textContent = "";
+          reflectionEl.textContent = "";
+          actionListEl.innerHTML = "";
+
+          typeInto(inputEl, '"' + example.input + '"', 14, token, function () {
+            setTimeout(function () {
+              if (token !== runToken) return;
+              typeInto(reflectionEl, example.reflection, 20, token, function () {
+                setTimeout(function () {
+                  if (token !== runToken) return;
+                  typeActions(example.actions, 0, token);
+                }, 300);
+              });
+            }, 300);
+          });
+        }
+
+        function typeActions(actions, i, token) {
+          if (token !== runToken) return;
+          if (i >= actions.length) {
+            setTimeout(function () {
+              if (token !== runToken) return;
+              exampleIndex = (exampleIndex + 1) % examples.length;
+              runExample(exampleIndex, token);
+            }, 3200);
+            return;
+          }
+          var row = document.createElement("div");
+          row.className = "demo-action";
+          var checkbox = document.createElement("span");
+          checkbox.className = "demo-checkbox";
+          var textSpan = document.createElement("span");
+          row.appendChild(checkbox);
+          row.appendChild(textSpan);
+          actionListEl.appendChild(row);
+          requestAnimationFrame(function () {
+            row.classList.add("visible");
+          });
+          typeInto(textSpan, actions[i], 16, token, function () {
+            setTimeout(function () {
+              typeActions(actions, i + 1, token);
+            }, 250);
+          });
+        }
+
+        if (reducedMotion) {
+          showStatic(examples[0]);
+        } else {
+          runExample(exampleIndex, runToken);
+        }
+      })();
     </script>
     <script type="module">
       import { initSideRays } from "/side-rays.js";

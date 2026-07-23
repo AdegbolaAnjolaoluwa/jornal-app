@@ -14,6 +14,13 @@
       })();
     </script>
     <title>Say So</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#1a1a1a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Say So" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -37,6 +44,8 @@
         --teal-tint: #e8f1ee;
         --teal-tint-border: #c7ded7;
         --error: #b0473c;
+        --error-tint: #fbeae7;
+        --error-tint-border: rgba(176, 71, 60, 0.3);
         --nav-dot-disabled: #d8d0be;
         --soon-badge-bg: #ede6d6;
         --shadow-sm: 0 1px 2px rgba(43, 36, 25, 0.06);
@@ -64,6 +73,8 @@
         --teal-tint: #1f3430;
         --teal-tint-border: #2f4f47;
         --error: #d97a6c;
+        --error-tint: #3a2320;
+        --error-tint-border: #5c342e;
         --nav-dot-disabled: #4a4234;
         --soon-badge-bg: #332c20;
         --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -92,6 +103,8 @@
           --teal-tint: #1f3430;
           --teal-tint-border: #2f4f47;
           --error: #d97a6c;
+          --error-tint: #3a2320;
+          --error-tint-border: #5c342e;
           --nav-dot-disabled: #4a4234;
           --soon-badge-bg: #332c20;
           --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -123,17 +136,39 @@
       /* ===== Auth Screen ===== */
       .auth-screen {
         display: none;
+        position: relative;
         min-height: 100vh;
         align-items: center;
         justify-content: center;
         background: var(--paper);
+        overflow: hidden;
       }
 
       .auth-screen.active {
         display: flex;
       }
 
+      .auth-rays {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        overflow: hidden;
+        /* Softens the effect into the page rather than sitting on top of it -
+           fades toward the theme's own background color at the edges so it
+           reads as ambient light, not a sticker behind the card. */
+        -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 85%);
+        mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 85%);
+        opacity: 0.55;
+      }
+
+      html[data-theme="dark"] .auth-rays {
+        opacity: 0.8;
+      }
+
       .auth-card {
+        position: relative;
+        z-index: 1;
         background: var(--surface);
         border-radius: 20px;
         padding: 44px 40px;
@@ -167,6 +202,32 @@
         font-size: 20px;
         font-weight: 700;
         letter-spacing: -0.01em;
+      }
+
+      .auth-session-interstitial {
+        display: none;
+        text-align: center;
+      }
+
+      .auth-session-interstitial.active {
+        display: block;
+      }
+
+      .auth-session-message {
+        font-size: 14.5px;
+        color: var(--ink-soft);
+        line-height: 1.5;
+        margin: 0 0 22px;
+      }
+
+      .auth-session-message strong {
+        color: var(--ink);
+      }
+
+      .auth-session-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
       }
 
       .auth-tabs {
@@ -292,6 +353,74 @@
 
       .auth-submit-wrap {
         margin-top: 24px;
+      }
+
+      /* ===== Signup Wizard ===== */
+      .wizard-progress {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 28px;
+      }
+
+      .wizard-progress-text {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--ink-faint);
+      }
+
+      .wizard-progress-dots {
+        display: flex;
+        gap: 6px;
+      }
+
+      .wizard-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--nav-dot-disabled);
+        transition: background 0.2s ease;
+      }
+
+      .wizard-dot.active,
+      .wizard-dot.completed {
+        background: var(--gold);
+      }
+
+      .wizard-step {
+        display: none;
+      }
+
+      .wizard-step.active {
+        display: block;
+        animation: formIn 0.3s ease;
+      }
+
+      .wizard-optional-tag {
+        font-weight: 400;
+        color: var(--ink-faint);
+      }
+
+      .curved-input-mount {
+        min-height: 56px;
+      }
+
+      .wizard-nav {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .wizard-nav .btn-primary {
+        width: auto;
+        flex: 1;
+      }
+
+      .wizard-nav .btn-secondary {
+        flex: 0 0 auto;
+        height: 50px;
       }
 
       .remember-me {
@@ -591,24 +720,53 @@
       }
 
       .sidebar {
-        width: 250px;
+        width: 264px;
         flex-shrink: 0;
         min-height: calc(100vh - 65px);
         background: var(--sidebar-bg);
         border-right: 1px solid var(--border);
-        padding: 28px 20px;
+        padding: 20px 16px;
         position: sticky;
         top: 65px;
         display: flex;
         flex-direction: column;
+        box-sizing: border-box;
+        overflow: hidden;
+        transition: width 0.2s ease, padding 0.2s ease;
+      }
+
+      .sidebar.collapsed {
+        width: 76px;
+        padding: 20px 12px;
+      }
+
+      .sidebar-brand-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 20px;
+        min-height: 28px;
+      }
+
+      .sidebar.collapsed .sidebar-brand-row {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .sidebar.collapsed .sidebar-brand {
+        justify-content: center;
       }
 
       .sidebar-brand {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 0 6px;
-        margin-bottom: 4px;
+        overflow: hidden;
+      }
+
+      .sidebar.collapsed .sidebar-brand span {
+        display: none;
       }
 
       .sidebar-brand-dot {
@@ -616,24 +774,171 @@
         height: 9px;
         border-radius: 50%;
         background: var(--gold);
+        flex-shrink: 0;
       }
 
       .sidebar-brand span {
         font-size: 17px;
         font-weight: 700;
+        white-space: nowrap;
       }
 
-      .sidebar-workspace {
+      .sidebar-collapse-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 6px;
+        border-radius: 8px;
+        color: var(--ink-soft);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .sidebar-collapse-btn:hover {
+        background: var(--surface-alt, var(--sidebar-bg));
+      }
+
+      .sidebar-new-entry-btn {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        justify-content: flex-start;
+        background: var(--gold);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 14px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        margin-bottom: 16px;
+        box-shadow: 0 6px 16px rgba(184, 135, 58, 0.28);
+      }
+
+      .sidebar-new-entry-btn:hover {
+        filter: brightness(1.06);
+      }
+
+      .sidebar.collapsed .sidebar-new-entry-btn {
+        justify-content: center;
+        padding: 12px 0;
+      }
+
+      .sidebar-new-entry-icon {
+        font-size: 16px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+
+      .sidebar.collapsed .sidebar-new-entry-label {
+        display: none;
+      }
+
+      .sidebar-search-row {
+        margin-bottom: 12px;
+      }
+
+      .sidebar-search-row .entries-search-input {
+        width: 100%;
+        box-sizing: border-box;
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--ink);
+        font-size: 13.5px;
+        font-family: inherit;
+        padding: 0 12px;
+      }
+
+      .sidebar.collapsed .sidebar-search-row {
+        display: none;
+      }
+
+      .sidebar-open-count {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: flex-start;
+        width: 100%;
+        background: var(--teal-tint);
+        border: 1px solid var(--teal-tint-border);
+        border-radius: 10px;
+        padding: 9px 12px;
+        margin-bottom: 16px;
+        cursor: pointer;
+        font-family: inherit;
         font-size: 12.5px;
-        color: var(--ink-faint);
+        font-weight: 600;
+        color: var(--teal-dark);
+        text-align: left;
+        box-sizing: border-box;
+      }
+
+      .sidebar-open-count:hover {
+        filter: brightness(0.98);
+      }
+
+      .sidebar.collapsed .sidebar-open-count {
+        justify-content: center;
+        padding: 9px 0;
+      }
+
+      .sidebar-history {
+        flex: 1;
+        overflow-y: auto;
+        margin: 0 -6px 12px;
         padding: 0 6px;
-        margin-bottom: 32px;
+        min-height: 40px;
+      }
+
+      .sidebar.collapsed .sidebar-history {
+        display: none;
+      }
+
+      .sidebar-history-group-label {
+        font-size: 10.5px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+        margin: 0 0 6px;
+        padding: 0 4px;
+      }
+
+      .sidebar-history-item {
+        padding: 7px 8px;
+        border-radius: 8px;
+        cursor: pointer;
+        margin-bottom: 1px;
+      }
+
+      .sidebar-history-item:hover {
+        background: var(--surface);
+      }
+
+      .sidebar-history-item-text {
+        font-size: 12.5px;
+        color: var(--ink);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .sidebar-history-item-time {
+        font-size: 10.5px;
+        color: var(--ink-faint);
+        margin-top: 1px;
       }
 
       .sidebar-nav {
         display: flex;
         flex-direction: column;
         gap: 4px;
+        flex-shrink: 0;
       }
 
       .sidebar-link {
@@ -646,12 +951,32 @@
         text-decoration: none;
         color: var(--ink-faint);
         font-size: 14.5px;
+        background: none;
+        border: none;
+        width: 100%;
+        cursor: pointer;
+        font-family: inherit;
+        box-sizing: border-box;
+      }
+
+      .sidebar.collapsed .sidebar-link {
+        justify-content: center;
+        padding: 10px 0;
       }
 
       .sidebar-link-main {
         display: flex;
         align-items: center;
         gap: 10px;
+      }
+
+      .sidebar.collapsed .sidebar-link-main span:last-child {
+        display: none;
+      }
+
+      .sidebar.collapsed .sidebar-dot {
+        width: 9px;
+        height: 9px;
       }
 
       .sidebar-dot {
@@ -684,29 +1009,37 @@
         background: var(--ink-soft);
       }
 
-      .sidebar-soon {
-        font-size: 10px;
-        font-weight: 700;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        color: var(--ink-faint);
-        background: var(--soon-badge-bg);
-        padding: 3px 7px;
-        border-radius: 6px;
+      .sidebar-bottom-cluster {
+        border-top: 1px solid var(--border);
+        margin-top: 12px;
+        padding-top: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        flex-shrink: 0;
       }
 
-      .sidebar-spacer {
-        flex: 1;
-      }
-
-      /* Bottom tab bar (mobile only, hidden on desktop) */
-      .tabbar {
+      .sidebar-backdrop {
         display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 40;
       }
 
-      /* Mobile "More" sheet (mobile only, hidden on desktop) */
-      .more-sheet-overlay {
+      .sidebar-backdrop.active {
+        display: block;
+      }
+
+      .hamburger-btn {
         display: none;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 8px;
+        border-radius: 8px;
+        color: var(--ink-soft);
+        margin-bottom: 8px;
       }
 
       .main-content {
@@ -741,6 +1074,13 @@
         text-transform: uppercase;
         color: var(--ink-faint);
         margin-bottom: 14px;
+      }
+
+      .settings-hint {
+        font-size: 13.5px;
+        color: var(--ink-soft);
+        margin: 0 0 14px;
+        line-height: 1.5;
       }
 
       /* ===== Entry Composer ===== */
@@ -812,6 +1152,103 @@
       @keyframes micPulse {
         0%, 100% { box-shadow: 0 0 0 6px rgba(184, 135, 58, 0.14); }
         50% { box-shadow: 0 0 0 10px rgba(184, 135, 58, 0.22); }
+      }
+
+      .btn-submit-circle {
+        position: absolute;
+        right: 8px;
+        bottom: 8px;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        border: none;
+        cursor: pointer;
+        background: var(--gold);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: filter 0.2s, background 0.2s;
+      }
+
+      .btn-submit-circle:hover:not(:disabled) {
+        filter: brightness(1.05);
+      }
+
+      .btn-submit-circle:disabled {
+        background: var(--border-input);
+        color: var(--ink-faint);
+        cursor: not-allowed;
+      }
+
+      .content-subheading {
+        font-size: 15px;
+        color: var(--ink-soft);
+        margin-top: -8px;
+        margin-bottom: 20px;
+      }
+
+      .composer-tabs {
+        display: flex;
+        gap: 4px;
+        background: var(--paper);
+        border-radius: 11px;
+        padding: 4px;
+        width: 200px;
+        margin-bottom: 12px;
+      }
+
+      .composer-tab {
+        flex: 1;
+        height: 32px;
+        border-radius: 8px;
+        border: none;
+        background: none;
+        font-size: 13px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        color: var(--ink-soft);
+      }
+
+      .composer-tab.active {
+        background: var(--surface);
+        color: var(--ink);
+        font-weight: 700;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .suggestion-chips {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+
+      .suggestion-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-align: left;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        cursor: pointer;
+        font-family: inherit;
+        color: var(--ink);
+        font-size: 13px;
+      }
+
+      .suggestion-chip:hover {
+        border-color: var(--border-input);
+      }
+
+      @media (max-width: 600px) {
+        .suggestion-chips {
+          grid-template-columns: 1fr;
+        }
       }
 
       .composer-recording-ui {
@@ -915,6 +1352,164 @@
         font-size: 13px;
         color: var(--ink-soft);
         font-variant-numeric: tabular-nums;
+      }
+
+      .composer-tags {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+      }
+
+      .tag-chip-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .tag-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--teal-tint);
+        border: 1px solid var(--teal-tint-border);
+        color: var(--teal-dark);
+        font-size: 12.5px;
+        font-weight: 600;
+        font-family: inherit;
+        cursor: pointer;
+        line-height: 1.4;
+      }
+
+      .tag-chip:hover {
+        filter: brightness(0.97);
+      }
+
+      .tag-chip.active {
+        background: var(--teal);
+        border-color: var(--teal);
+        color: #fff;
+      }
+
+      .tag-chip-remove {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 13px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        opacity: 0.65;
+      }
+
+      .tag-chip-remove:hover {
+        opacity: 1;
+      }
+
+      .tag-input {
+        flex: 1;
+        min-width: 120px;
+        border: none;
+        background: transparent;
+        font-family: inherit;
+        font-size: 13px;
+        color: var(--ink);
+        padding: 4px 2px;
+      }
+
+      .tag-input:focus {
+        outline: none;
+      }
+
+      .tag-autocomplete-list {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        z-index: 5;
+        min-width: 160px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        box-shadow: var(--shadow-md);
+        margin-top: 4px;
+        overflow: hidden;
+        display: none;
+      }
+
+      .tag-autocomplete-list.visible {
+        display: block;
+      }
+
+      .tag-autocomplete-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: 8px 12px;
+        background: none;
+        border: none;
+        font-family: inherit;
+        font-size: 13px;
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      .tag-autocomplete-item:hover {
+        background: var(--gold-tint);
+      }
+
+      .entry-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 8px 0;
+      }
+
+      .active-tag-filter {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--gold-tint);
+        border: 1px solid var(--gold-tint-border);
+        color: var(--gold-dark);
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 12px;
+      }
+
+      .active-tag-filter button {
+        background: none;
+        border: none;
+        color: inherit;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 1;
+        padding: 0;
+      }
+
+      .entries-search-row {
+        margin-bottom: 16px;
+      }
+
+      .entries-search-input {
+        width: 100%;
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 16px;
+        font-family: inherit;
+        font-size: 14.5px;
+        color: var(--ink);
+        background: var(--surface-warm);
+      }
+
+      .entries-search-input:focus {
+        outline: none;
+        border-color: var(--gold);
       }
 
       .form-actions {
@@ -1764,12 +2359,71 @@
         color: var(--ink-faint);
       }
 
+      .detail-body-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 18px;
+      }
+
       .detail-body {
+        flex: 1;
         font-size: 17px;
         line-height: 1.65;
         color: var(--ink);
-        margin-bottom: 18px;
+        margin-bottom: 0;
         white-space: pre-wrap;
+      }
+
+      .detail-edit-btn {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: var(--sidebar-bg);
+        color: var(--ink-soft);
+        font-size: 14px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+
+      .detail-edit-btn:hover {
+        color: var(--ink);
+      }
+
+      .detail-text-editor textarea {
+        width: 100%;
+        min-height: 100px;
+        border: 1.5px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-family: inherit;
+        font-size: 15px;
+        color: var(--ink);
+        background: var(--surface-warm);
+        resize: vertical;
+      }
+
+      .detail-text-editor-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .re-extract-prompt {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin: -6px 0 18px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: var(--gold-tint);
+        border: 1px solid var(--gold-tint-border);
+        font-size: 13.5px;
+        color: var(--ink-soft);
       }
 
       .detail-section {
@@ -1799,15 +2453,39 @@
       }
 
       .alert-error {
-        background: #fbeae7;
+        background: var(--error-tint);
         color: var(--error);
-        border-color: rgba(176, 71, 60, 0.3);
+        border-color: var(--error-tint-border);
       }
 
       .alert-success {
         background: var(--teal-tint);
         color: var(--teal-dark);
         border-color: var(--teal-tint-border);
+      }
+
+      .alert-info {
+        background: var(--gold-tint);
+        color: var(--gold-dark);
+        border-color: var(--gold-tint-border);
+      }
+
+      .offline-banner {
+        display: none;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: var(--gold-tint);
+        color: var(--gold-dark);
+        border-bottom: 1px solid var(--gold-tint-border);
+        font-size: 13px;
+        font-weight: 600;
+        text-align: center;
+      }
+
+      .offline-banner.active {
+        display: flex;
       }
 
       .toast-container {
@@ -1855,140 +2533,54 @@
       }
 
       .toast-error {
-        background: #fbeae7;
+        background: var(--error-tint);
         color: var(--error);
-        border-color: rgba(176, 71, 60, 0.3);
+        border-color: var(--error-tint-border);
       }
 
       /* ===== Responsive ===== */
       @media (max-width: 860px) {
-        /* Sidebar is replaced by a bottom tab bar on mobile/tablet */
+        /* Sidebar becomes an off-canvas drawer, opened via the hamburger button */
         .sidebar {
-          display: none;
-        }
-
-        .tabbar {
-          display: flex;
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          z-index: 50;
-          background: var(--surface);
-          border-top: 1px solid var(--border);
-          padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-          box-shadow: 0 -4px 16px rgba(43, 36, 25, 0.06);
-        }
-
-        .tabbar-link {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 2px;
-          padding: 8px 4px;
-          border-radius: 10px;
-          border: none;
-          background: none;
-          font-family: inherit;
-          font-size: 11px;
-          font-weight: 600;
-          color: var(--ink-faint);
-          text-decoration: none;
-          cursor: pointer;
-          position: relative;
-        }
-
-        .tabbar-link.active {
-          color: var(--gold-dark);
-        }
-
-        .tabbar-icon {
-          font-size: 20px;
-          line-height: 1;
-        }
-
-        .tabbar-create .tabbar-icon {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: var(--gold);
-          color: #fff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 20px;
-          font-weight: 700;
-        }
-
-        .tabbar-soon {
-          position: absolute;
-          top: 2px;
-          right: 14px;
-          font-size: 8px;
-          font-weight: 700;
-          letter-spacing: 0.03em;
-          text-transform: uppercase;
-          color: var(--ink-faint);
-          background: var(--soon-badge-bg);
-          padding: 2px 4px;
-          border-radius: 4px;
-        }
-
-        .more-sheet-overlay {
-          display: none;
-          position: fixed;
-          inset: 0;
-          z-index: 60;
-          background: rgba(43, 36, 25, 0.45);
-        }
-
-        .more-sheet-overlay.active {
-          display: block;
-          animation: overlayIn 0.2s ease;
-        }
-
-        .more-sheet {
           position: fixed;
           left: 0;
-          right: 0;
-          bottom: 0;
-          background: var(--surface);
-          border-radius: 20px 20px 0 0;
-          padding: 10px 16px calc(20px + env(safe-area-inset-bottom));
-          box-shadow: var(--shadow-modal);
-          animation: sheetUp 0.25s ease;
+          top: 0;
+          height: 100%;
+          width: 280px;
+          transform: translateX(-100%);
+          transition: transform 0.25s ease;
+          z-index: 70;
         }
 
-        .more-sheet-handle {
-          width: 36px;
-          height: 4px;
-          border-radius: 2px;
-          background: var(--border-input);
-          margin: 6px auto 14px;
+        .sidebar.mobile-open {
+          transform: translateX(0);
         }
 
-        .more-sheet-link {
-          display: block;
-          padding: 14px 8px;
-          font-size: 15px;
-          font-weight: 600;
-          color: var(--ink);
-          text-decoration: none;
-          border-bottom: 1px solid var(--border);
+        .sidebar.collapsed {
+          width: 280px;
+          padding: 20px 16px;
         }
 
-        .more-sheet-link:last-child {
-          border-bottom: none;
+        /* Collapsed styling is a desktop-only concept; on mobile the drawer
+           is always shown at full width when open, icon-rail state doesn't apply. */
+        .sidebar.collapsed .sidebar-brand span,
+        .sidebar.collapsed .sidebar-new-entry-label,
+        .sidebar.collapsed .sidebar-search-row,
+        .sidebar.collapsed .sidebar-history,
+        .sidebar.collapsed .sidebar-link-main span:last-child {
+          display: initial;
+        }
+        .sidebar.collapsed .sidebar-open-count {
+          justify-content: flex-start;
+          padding: 9px 12px;
         }
 
-        @keyframes sheetUp {
-          from { transform: translateY(100%); }
-          to { transform: translateY(0); }
+        .hamburger-btn {
+          display: flex;
         }
 
         .main-content {
-          padding: 24px 16px calc(88px + env(safe-area-inset-bottom));
+          padding: 20px 16px 40px;
         }
 
         .content-heading {
@@ -2118,44 +2710,80 @@
   <body>
     <!-- Auth Screen -->
     <div class="auth-screen active" id="authScreen">
+      <div class="auth-rays" id="authRays"></div>
       <div class="auth-card">
         <div class="auth-brand">
           <div class="auth-brand-dot"></div>
           <span>Say So</span>
         </div>
 
-        <div class="auth-tabs">
+        <!-- Shown instead of the forms when the user already has a valid session
+             but explicitly navigated to ?tab=signin/signup - avoids silently
+             dropping them back into their existing session, and avoids showing
+             a form they can't usefully submit without logging out first. -->
+        <div class="auth-session-interstitial" id="authSessionInterstitial">
+          <p class="auth-session-message">
+            You're already signed in as <strong id="authSessionUserLabel"></strong>.
+          </p>
+          <div class="auth-session-actions">
+            <button type="button" class="btn btn-secondary" id="authSessionLogoutBtn">Log out to continue</button>
+            <button type="button" class="btn btn-primary" id="authSessionContinueBtn">Continue to my account</button>
+          </div>
+        </div>
+
+        <div class="auth-tabs" id="authTabs">
           <button type="button" class="auth-tab active" data-tab="signup">Sign up</button>
           <button type="button" class="auth-tab" data-tab="signin">Sign in</button>
         </div>
 
         <!-- Sign Up Form -->
         <form class="auth-form active" id="signupForm" novalidate>
-          <div class="form-group">
-            <label for="signup-name">Name</label>
-            <input type="text" id="signup-name" placeholder="What should we call you?" maxlength="100" />
-            <div class="form-error" id="signup-name-error"></div>
-          </div>
-
-          <div class="form-group">
-            <label for="signup-email">Email</label>
-            <input type="email" id="signup-email" placeholder="you@domain.com" />
-            <div class="form-error" id="signup-email-error"></div>
-          </div>
-
-          <div class="form-group">
-            <label for="signup-password">Password</label>
-            <div class="password-field">
-              <input type="password" id="signup-password" placeholder="••••••••" />
-              <button type="button" class="password-toggle" data-target="signup-password">Show</button>
+          <div class="wizard-progress" id="signupWizardProgress">
+            <span class="wizard-progress-text" id="signupWizardProgressText">Step 1 of 4</span>
+            <div class="wizard-progress-dots">
+              <span class="wizard-dot active" data-step="1"></span>
+              <span class="wizard-dot" data-step="2"></span>
+              <span class="wizard-dot" data-step="3"></span>
+              <span class="wizard-dot" data-step="4"></span>
             </div>
-            <div class="form-error" id="signup-password-error"></div>
+          </div>
+
+          <div class="wizard-step active" id="signupStep1" data-step="1">
+            <div class="form-group">
+              <label>Email</label>
+              <div class="curved-input-mount" id="signupEmailMount"></div>
+              <div class="form-error" id="signup-email-error"></div>
+            </div>
+          </div>
+
+          <div class="wizard-step" id="signupStep2" data-step="2">
+            <div class="form-group">
+              <label>Password</label>
+              <div class="curved-input-mount" id="signupPasswordMount"></div>
+              <div class="form-error" id="signup-password-error"></div>
+            </div>
+          </div>
+
+          <div class="wizard-step" id="signupStep3" data-step="3">
+            <div class="form-group">
+              <label>Name</label>
+              <div class="curved-input-mount" id="signupNameMount"></div>
+              <div class="form-error" id="signup-name-error"></div>
+            </div>
+          </div>
+
+          <div class="wizard-step" id="signupStep4" data-step="4">
+            <div class="form-group">
+              <label>Age <span class="wizard-optional-tag">(optional)</span></label>
+              <div class="curved-input-mount" id="signupAgeMount"></div>
+            </div>
           </div>
 
           <div id="signup-general-error" class="form-error"></div>
 
-          <div class="auth-submit-wrap">
-            <button type="submit" class="btn btn-primary">Create account</button>
+          <div class="wizard-nav">
+            <button type="button" class="btn btn-secondary wizard-back-btn" id="signupWizardBackBtn" style="display: none;">Back</button>
+            <button type="button" class="btn btn-primary wizard-continue-btn" id="signupWizardContinueBtn">Continue</button>
           </div>
 
           <p class="auth-switch">Already have an account? <a href="#" data-switch-tab="signin">Sign in</a></p>
@@ -2314,6 +2942,7 @@
 
     <!-- App Screen -->
     <div class="app-screen" id="appScreen">
+      <div class="offline-banner" id="offlineBanner">You're offline — showing your last-known data. Some actions won't work until you reconnect.</div>
       <div class="header">
         <div class="header-content">
           <h1>Say So</h1>
@@ -2326,60 +2955,70 @@
         </div>
       </div>
 
+      <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
       <div class="app-body">
         <!-- Sidebar -->
-        <aside class="sidebar">
-          <div class="sidebar-brand">
-            <div class="sidebar-brand-dot"></div>
-            <span>Say So</span>
+        <aside class="sidebar" id="appSidebar">
+          <div class="sidebar-brand-row">
+            <div class="sidebar-brand">
+              <div class="sidebar-brand-dot"></div>
+              <span>Say So</span>
+            </div>
+            <button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="Collapse sidebar">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+            </button>
           </div>
-          <div class="sidebar-workspace">Personal Journal</div>
+
+          <button type="button" class="sidebar-new-entry-btn" id="newEntryBtn">
+            <span class="sidebar-new-entry-icon">+</span>
+            <span class="sidebar-new-entry-label">New Entry</span>
+          </button>
+
+          <div class="sidebar-search-row" id="sidebarSearchRow">
+            <input type="search" id="entrySearchInput" class="entries-search-input" placeholder="Search entries…" />
+          </div>
+
+          <button type="button" class="sidebar-open-count" id="sidebarOpenCount"></button>
+
+          <div class="sayso-scroll sidebar-history" id="sidebarHistoryList"></div>
 
           <nav class="sidebar-nav">
-            <a href="#" class="sidebar-link" data-view="allEntriesView">
+            <a href="#" class="sidebar-link" data-view="allEntriesView" title="All Entries">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>All Entries</span></span>
             </a>
-            <a href="#" class="sidebar-link" data-view="todoView">
+            <a href="#" class="sidebar-link" data-view="todoView" title="To-do List">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>To-do List</span></span>
             </a>
-            <a href="#" class="sidebar-link" data-view="voiceNotesView">
+            <a href="#" class="sidebar-link" data-view="voiceNotesView" title="Voice Notes">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Voice Notes</span></span>
             </a>
-            <a href="#" class="sidebar-link" data-view="archiveView">
+            <a href="#" class="sidebar-link" data-view="archiveView" title="Archive">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Archive</span></span>
             </a>
-            <a href="#" class="sidebar-link" data-view="trashView">
+            <a href="#" class="sidebar-link" data-view="trashView" title="Trash">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Trash</span></span>
             </a>
           </nav>
 
-          <div class="sidebar-spacer"></div>
-
-          <a href="#" class="sidebar-link settings" data-view="settingsView">
-            <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Settings</span></span>
-          </a>
+          <div class="sidebar-bottom-cluster">
+            <button type="button" class="sidebar-link sidebar-theme-row" id="sidebarThemeRow" title="Toggle theme">
+              <span class="sidebar-link-main"><span class="sidebar-dot" id="sidebarThemeDot"></span><span id="sidebarThemeLabel">Theme</span></span>
+            </button>
+            <a href="#" class="sidebar-link settings" data-view="settingsView" title="Settings">
+              <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Settings</span></span>
+            </a>
+          </div>
         </aside>
-
-        <!-- Bottom Tab Bar (mobile only) -->
-        <nav class="tabbar">
-          <a href="#" class="tabbar-link" data-view="allEntriesView" id="tabbarEntriesLink">
-            <span class="tabbar-icon">&#128220;</span>
-            <span>Entries</span>
-          </a>
-          <button type="button" class="tabbar-link tabbar-create" id="tabbarCreateBtn">
-            <span class="tabbar-icon">+</span>
-            <span>Create</span>
-          </button>
-          <button type="button" class="tabbar-link" id="tabbarMoreBtn">
-            <span class="tabbar-icon">&#8943;</span>
-            <span>More</span>
-          </button>
-        </nav>
 
         <!-- Main Canvas -->
         <main class="main-content">
+          <button type="button" class="hamburger-btn" id="hamburgerBtn" aria-label="Open menu">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+          </button>
           <div class="content-inner">
-            <div class="content-heading">All Entries</div>
+            <div class="content-heading" id="contentHeading">All Entries</div>
+            <div class="content-subheading" id="contentSubheading" style="display: none;"></div>
 
             <div id="alertContainer"></div>
 
@@ -2387,6 +3026,18 @@
             <div class="view active" id="allEntriesView">
               <!-- Entry Composer -->
               <div class="entry-form">
+                <div class="composer-tabs" id="composerTabs">
+                  <button type="button" class="composer-tab active" id="composerTextTabBtn" data-tab="text">Text</button>
+                  <button type="button" class="composer-tab" id="composerVoiceTabBtn" data-tab="voice">Voice</button>
+                </div>
+
+                <div class="suggestion-chips" id="suggestionChips">
+                  <button type="button" class="suggestion-chip" data-prefill="Talking through my day: ">🎙 Talk through your day</button>
+                  <button type="button" class="suggestion-chip" data-prefill="Need to follow up on: ">✅ Note something to follow up on</button>
+                  <button type="button" class="suggestion-chip" data-prefill="Still deciding on: ">📌 Flag a decision you're waiting on</button>
+                  <button type="button" class="suggestion-chip" data-prefill="Quick reminder: ">📝 Jot a quick reminder</button>
+                </div>
+
                 <div class="composer" id="composer">
                   <div class="composer-field">
                     <textarea id="textInput" class="composer-textarea" placeholder="What's on your mind tonight?" rows="1"></textarea>
@@ -2402,13 +3053,16 @@
                       </div>
                       <div class="rec-timer" id="recTimer">0:00</div>
                     </div>
-                    <button type="button" class="btn-mic" id="micBtn" aria-label="Record voice">
+                    <button type="button" class="btn-mic" id="micBtn" aria-label="Record voice" style="display: none;">
                       <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
                         <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
                         <line x1="12" y1="19" x2="12" y2="23"></line>
                         <line x1="8" y1="23" x2="16" y2="23"></line>
                       </svg>
+                    </button>
+                    <button type="button" class="btn-submit-circle" id="submitBtn" disabled aria-label="Send">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M2 21l21-9L2 3v7l15 2-15 2z"></path></svg>
                     </button>
                   </div>
                   <div class="composer-controls" id="composerControls">
@@ -2420,6 +3074,12 @@
                   </div>
                 </div>
 
+                <div class="composer-tags" id="composerTagsRow">
+                  <div class="tag-chip-list" id="composerTagChips"></div>
+                  <input type="text" id="composerTagInput" class="tag-input" placeholder="Add tag…" autocomplete="off" />
+                  <div class="tag-autocomplete-list" id="composerTagAutocomplete"></div>
+                </div>
+
                 <div class="form-actions">
                   <label class="temp-toggle" id="temporaryToggleLabel">
                     <input type="checkbox" id="temporaryToggle" />
@@ -2429,7 +3089,6 @@
                     Clear temporary &times;
                   </button>
                   <button type="button" class="btn-cancel" id="cancelBtn">Cancel</button>
-                  <button type="button" class="btn-submit" id="submitBtn">Save Entry</button>
                 </div>
               </div>
 
@@ -2466,6 +3125,7 @@
 
               <!-- Entries List -->
               <div class="entries-section">
+                <div id="activeTagFilterRow"></div>
                 <div id="entriesList"></div>
               </div>
             </div>
@@ -2520,6 +3180,12 @@
 
               <div class="settings-section-label">What I know about you</div>
               <div id="factsList"></div>
+
+              <div class="settings-section-label">Export Data</div>
+              <div id="exportSection">
+                <p class="settings-hint">Download all of your entries, action points, and tags as a JSON file.</p>
+                <button type="button" class="btn-secondary" id="exportDataBtn">Export as JSON</button>
+              </div>
             </div>
           </div>
         </main>
@@ -2531,17 +3197,6 @@
       <div class="detail-card" id="detailCard"></div>
     </div>
 
-    <!-- Mobile "More" sheet -->
-    <div class="more-sheet-overlay" id="moreSheetOverlay">
-      <div class="more-sheet" id="moreSheet">
-        <div class="more-sheet-handle"></div>
-        <a href="#" class="more-sheet-link" data-view="todoView">To-do List</a>
-        <a href="#" class="more-sheet-link" data-view="voiceNotesView">Voice Notes</a>
-        <a href="#" class="more-sheet-link" data-view="archiveView">Archive</a>
-        <a href="#" class="more-sheet-link" data-view="trashView">Trash</a>
-        <a href="#" class="more-sheet-link" data-view="settingsView">Settings</a>
-      </div>
-    </div>
 
     <script>
       // ===== Configuration & State =====
@@ -2563,6 +3218,8 @@
             actionPoints: "/api/action-points",
             archivedEntries: "/api/entries/archived",
             trashedEntries: "/api/entries/trash",
+            tags: "/api/tags",
+            export: "/api/export",
           },
         },
         voice: {
@@ -2578,6 +3235,7 @@
 
       const state = {
         user: null,
+        isOfflineProvisional: false,
         entries: [],
         currentInputType: "text",
         facts: [],
@@ -2585,6 +3243,14 @@
         archivedEntries: [],
         trashedEntries: [],
         isTemporaryMode: false,
+        hasSentThisSession: false,
+        sidebarCollapsed: (typeof localStorage !== "undefined" && localStorage.getItem("sayso_sidebar_collapsed") === "1") || false,
+        sidebarMobileOpen: false,
+
+        tags: [],
+        searchQuery: "",
+        activeTagFilter: null,
+        composerTags: [],
 
         composerMode: "idle", // idle | recording | paused | previewing
         mediaRecorder: null,
@@ -2660,13 +3326,13 @@
       }
 
       // ===== Auth Functions =====
-      async function handleSignup(email, password, name) {
+      async function handleSignup(email, password, name, age) {
         try {
           const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
           const response = await fetch(CONFIG.api.endpoints.signup, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password, name, timezone }),
+            body: JSON.stringify({ email, password, name, timezone, age: age || null }),
             credentials: "include",
           });
 
@@ -2678,6 +3344,7 @@
           }
 
           state.user = data.data.user;
+          cacheLastUser(state.user);
           identifyUser(state.user);
           trackEvent("signup_completed");
           showToast(`Welcome, ${displayName(state.user)}! Your account has been created.`);
@@ -2687,6 +3354,135 @@
           showToast(`Sign up failed: ${error.message}`, "error");
           return false;
         }
+      }
+
+      // ===== Signup Wizard =====
+      // Email -> Password -> Name -> Age, one field per step, collected here
+      // and only POSTed to the server once, at the final step. Each step's
+      // curved-input instance stays mounted (not destroyed) across
+      // navigation so Back can restore a prior answer synchronously via
+      // setValue() instead of losing it.
+      let signupWizardState = { step: 1, email: "", password: "", name: "", age: "" };
+      let signupCurvedInputs = { email: null, password: null, name: null, age: null };
+
+      function ensureCurvedInputMounted(step) {
+        const configs = {
+          1: { field: "email", mountId: "signupEmailMount", opts: { placeholder: "you@domain.com" } },
+          2: { field: "password", mountId: "signupPasswordMount", opts: { placeholder: "••••••••", mode: "password" } },
+          3: { field: "name", mountId: "signupNameMount", opts: { placeholder: "What should we call you?", maxLength: 100 } },
+          4: { field: "age", mountId: "signupAgeMount", opts: { placeholder: "Your age" } },
+        };
+        const config = configs[step];
+        if (!config || signupCurvedInputs[config.field] || !window.initCurvedInput) return;
+
+        const mountEl = document.getElementById(config.mountId);
+        if (!mountEl) return;
+
+        signupCurvedInputs[config.field] = window.initCurvedInput(mountEl, {
+          ...config.opts,
+          onSubmit: advanceSignupWizard,
+        });
+      }
+
+      function renderSignupWizardStep() {
+        const step = signupWizardState.step;
+        ensureCurvedInputMounted(step);
+
+        document.querySelectorAll(".wizard-step").forEach((el) => {
+          el.classList.toggle("active", Number(el.dataset.step) === step);
+        });
+
+        document.getElementById("signupWizardProgressText").textContent = `Step ${step} of 4`;
+        document.querySelectorAll(".wizard-dot").forEach((dot) => {
+          const dotStep = Number(dot.dataset.step);
+          dot.classList.toggle("active", dotStep === step);
+          dot.classList.toggle("completed", dotStep < step);
+        });
+
+        document.getElementById("signupWizardBackBtn").style.display = step === 1 ? "none" : "";
+        document.getElementById("signupWizardContinueBtn").textContent = step === 4 ? "Create account" : "Continue";
+
+        const fieldForStep = { 1: "email", 2: "password", 3: "name", 4: "age" }[step];
+        const instance = signupCurvedInputs[fieldForStep];
+        if (instance) {
+          setTimeout(() => instance.focus(), 50);
+        }
+      }
+
+      function validateSignupStep(step) {
+        if (step === 1) {
+          const email = signupCurvedInputs.email.getValue().trim();
+          const errorEl = document.getElementById("signup-email-error");
+          if (!validateEmailFormat(email)) {
+            errorEl.textContent = "Enter a valid email address";
+            signupCurvedInputs.email.setError("Enter a valid email address");
+            return false;
+          }
+          errorEl.textContent = "";
+          signupCurvedInputs.email.setError(null);
+          return true;
+        }
+        if (step === 2) {
+          const password = signupCurvedInputs.password.getValue();
+          const errorEl = document.getElementById("signup-password-error");
+          if (password.length < 8) {
+            errorEl.textContent = "Password must be at least 8 characters";
+            signupCurvedInputs.password.setError("Password must be at least 8 characters");
+            return false;
+          }
+          errorEl.textContent = "";
+          signupCurvedInputs.password.setError(null);
+          return true;
+        }
+        // Name (step 3) has no client-side validation, matching the server
+        // (only a 100-char cap, enforced by the curved-input's maxLength).
+        // Age (step 4) is optional with no validation per product decision.
+        return true;
+      }
+
+      function persistCurrentStepValue(step) {
+        if (step === 1) signupWizardState.email = signupCurvedInputs.email.getValue().trim();
+        if (step === 2) signupWizardState.password = signupCurvedInputs.password.getValue();
+        if (step === 3) signupWizardState.name = signupCurvedInputs.name.getValue().trim();
+        if (step === 4) signupWizardState.age = signupCurvedInputs.age.getValue().trim();
+      }
+
+      async function advanceSignupWizard() {
+        const step = signupWizardState.step;
+        if (!validateSignupStep(step)) return;
+        persistCurrentStepValue(step);
+
+        if (step < 4) {
+          signupWizardState.step += 1;
+          renderSignupWizardStep();
+        } else {
+          const continueBtn = document.getElementById("signupWizardContinueBtn");
+          continueBtn.disabled = true;
+          try {
+            await handleSignup(signupWizardState.email, signupWizardState.password, signupWizardState.name, signupWizardState.age);
+          } finally {
+            continueBtn.disabled = false;
+          }
+        }
+      }
+
+      function retreatSignupWizard() {
+        if (signupWizardState.step <= 1) return;
+        persistCurrentStepValue(signupWizardState.step);
+        signupWizardState.step -= 1;
+        renderSignupWizardStep();
+
+        const fieldForStep = { 1: "email", 2: "password", 3: "name", 4: "age" }[signupWizardState.step];
+        const instance = signupCurvedInputs[fieldForStep];
+        if (instance) instance.setValue(signupWizardState[fieldForStep]);
+      }
+
+      function resetSignupWizard() {
+        Object.values(signupCurvedInputs).forEach((instance) => instance?.destroy());
+        signupCurvedInputs = { email: null, password: null, name: null, age: null };
+        signupWizardState = { step: 1, email: "", password: "", name: "", age: "" };
+        document.querySelectorAll("#signupForm .form-error").forEach((el) => (el.textContent = ""));
+        renderSignupWizardStep();
       }
 
       async function handleSignin(email, password, rememberMe) {
@@ -2706,6 +3502,7 @@
           }
 
           state.user = data.data.user;
+          cacheLastUser(state.user);
           identifyUser(state.user);
           trackEvent("signin_completed");
           showToast(`Welcome back, ${displayName(state.user)}!`);
@@ -2826,16 +3623,36 @@
         }
       }
 
+      // Signup's fields (email/password/name) each live on their own wizard
+      // step now, not a real <input> - a server-side error (e.g. "email
+      // already registered", which can only be known after the final submit)
+      // needs to jump the wizard back to the right step, or the error would
+      // land on a hidden div the user has no way to see.
+      const SIGNUP_FIELD_TO_STEP = { email: 1, password: 2, name: 3 };
+
       function handleAuthError(data, formType) {
         const errorData = data.error;
 
         if (errorData.fields) {
+          if (formType === "signup") {
+            const failingField = Object.keys(errorData.fields).find(
+              (f) => errorData.fields[f] && SIGNUP_FIELD_TO_STEP[f]
+            );
+            if (failingField) {
+              signupWizardState.step = SIGNUP_FIELD_TO_STEP[failingField];
+              renderSignupWizardStep();
+            }
+          }
+
           for (const [field, message] of Object.entries(errorData.fields)) {
             if (message) {
               const errorEl = document.getElementById(`${formType}-${field}-error`);
               if (errorEl) errorEl.textContent = message;
               const inputEl = document.getElementById(`${formType}-${field}`);
               if (inputEl) inputEl.classList.add("has-error");
+              if (formType === "signup" && signupCurvedInputs[field]) {
+                signupCurvedInputs[field].setError(message);
+              }
             }
           }
         } else {
@@ -2852,11 +3669,45 @@
           });
 
           state.user = null;
+          state.isOfflineProvisional = false;
+          clearCachedUser();
+          document.getElementById("offlineBanner").classList.remove("active");
           if (window.POSTHOG_KEY && window.posthog) posthog.reset();
           showAuthScreen();
         } catch (error) {
           showToast(`Logout failed: ${error.message}`, "error");
         }
+      }
+
+      // Read-only cache of the last confirmed user object, used only to let a
+      // cold reload while offline show cached entries instead of a login
+      // screen it has no way to actually verify. This never substitutes for
+      // the real httpOnly session cookie or bypasses server auth - it's a
+      // provisional, clearly-labeled state that gets reconciled (confirmed or
+      // corrected) the moment a real /api/auth/me check can run again.
+      const USER_CACHE_KEY = "sayso_last_user_cache";
+
+      function cacheLastUser(user) {
+        try {
+          localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+        } catch (e) {
+          // Storage full/unavailable - offline cold-start just won't be available.
+        }
+      }
+
+      function readCachedUser() {
+        try {
+          const raw = localStorage.getItem(USER_CACHE_KEY);
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function clearCachedUser() {
+        try {
+          localStorage.removeItem(USER_CACHE_KEY);
+        } catch (e) {}
       }
 
       async function checkAuth() {
@@ -2866,17 +3717,144 @@
           });
 
           if (!response.ok) {
+            // A real response from the server saying "not logged in" - trust
+            // it, and stop treating any cached user as valid.
+            clearCachedUser();
             showAuthScreen();
             return;
           }
 
           const data = await response.json();
           state.user = data.data.user;
+          cacheLastUser(state.user);
           identifyUser(state.user);
+          if (state.isOfflineProvisional) {
+            state.isOfflineProvisional = false;
+            document.getElementById("offlineBanner").classList.remove("active");
+          }
           enterApp();
+          loadTags();
         } catch (error) {
-          showAuthScreen();
+          // The request itself never reached the server (offline), so we
+          // genuinely don't know if the session is still valid - fall back to
+          // the last-known user, provisionally, rather than assuming logged out.
+          const cachedUser = isOfflineError(error) ? readCachedUser() : null;
+          if (cachedUser) {
+            enterAppProvisionally(cachedUser);
+          } else {
+            showAuthScreen();
+          }
         }
+      }
+
+      // Enters the app from a cached user object when the real session check
+      // couldn't reach the server at all. Always goes straight to the entries
+      // view (never onboarding/first-entry, which mutate server state and
+      // can't happen offline) and shows a persistent banner so this state is
+      // never mistaken for a normal, verified session.
+      function enterAppProvisionally(cachedUser) {
+        state.user = cachedUser;
+        state.isOfflineProvisional = true;
+        identifyUser(state.user);
+        showAppScreen();
+        document.getElementById("offlineBanner").classList.add("active");
+        loadEntries();
+
+        // The moment real connectivity returns, re-run the real check so this
+        // provisional state gets confirmed or corrected - never left dangling.
+        window.addEventListener(
+          "online",
+          () => {
+            if (state.isOfflineProvisional) checkAuth();
+          },
+          { once: true }
+        );
+      }
+
+      // ===== Composer Tag Input =====
+      function renderComposerTagChips() {
+        const container = document.getElementById("composerTagChips");
+        if (!container) return;
+        container.innerHTML = state.composerTags
+          .map(
+            (name, i) => `
+          <span class="tag-chip" data-index="${i}">
+            ${escapeHtml(name)}
+            <button type="button" class="tag-chip-remove" data-index="${i}" aria-label="Remove tag">&times;</button>
+          </span>
+        `
+          )
+          .join("");
+        container.querySelectorAll(".tag-chip-remove").forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            state.composerTags.splice(Number(btn.dataset.index), 1);
+            renderComposerTagChips();
+          });
+        });
+      }
+
+      function addComposerTag(name) {
+        const trimmed = name.trim();
+        if (!trimmed) return;
+        if (state.composerTags.some((t) => t.toLowerCase() === trimmed.toLowerCase())) return;
+        state.composerTags.push(trimmed);
+        renderComposerTagChips();
+      }
+
+      function bindComposerTagInput() {
+        const input = document.getElementById("composerTagInput");
+        const autocompleteList = document.getElementById("composerTagAutocomplete");
+        if (!input || !autocompleteList) return;
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault();
+            addComposerTag(input.value);
+            input.value = "";
+            autocompleteList.classList.remove("visible");
+          }
+        });
+
+        const showSuggestions = debounce(async (prefix) => {
+          if (!prefix) {
+            autocompleteList.classList.remove("visible");
+            return;
+          }
+          try {
+            const response = await authFetch(`${CONFIG.api.endpoints.tags}?prefix=${encodeURIComponent(prefix)}`);
+            if (!response.ok) throw new Error("Failed to fetch tag suggestions");
+            const data = await response.json();
+            const suggestions = data.data.tags.filter(
+              (t) => !state.composerTags.some((existing) => existing.toLowerCase() === t.name.toLowerCase())
+            );
+            if (suggestions.length === 0) {
+              autocompleteList.classList.remove("visible");
+              return;
+            }
+            autocompleteList.innerHTML = suggestions
+              .map((t) => `<button type="button" class="tag-autocomplete-item" data-name="${escapeHtml(t.name)}">${escapeHtml(t.name)}</button>`)
+              .join("");
+            autocompleteList.classList.add("visible");
+            autocompleteList.querySelectorAll(".tag-autocomplete-item").forEach((item) => {
+              item.addEventListener("click", () => {
+                addComposerTag(item.dataset.name);
+                input.value = "";
+                autocompleteList.classList.remove("visible");
+                input.focus();
+              });
+            });
+          } catch (error) {
+            if (!(error instanceof SessionExpiredError)) {
+              console.error("Failed to fetch tag suggestions:", error);
+            }
+          }
+        }, 250);
+
+        input.addEventListener("input", () => showSuggestions(input.value.trim()));
+        input.addEventListener("blur", () => {
+          setTimeout(() => autocompleteList.classList.remove("visible"), 150);
+        });
       }
 
       // ===== Entry Functions =====
@@ -2902,6 +3880,7 @@
             has_audio: false,
             is_archived: false,
             action_points: [],
+            tags: state.composerTags.map((name) => ({ id: name, name })),
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             isTemporary: true,
@@ -2911,6 +3890,8 @@
           renderEntries();
           closeRecordingPreview();
           clearForm();
+          state.hasSentThisSession = true;
+          renderComposerHeaderState();
 
           try {
             const extractResponse = await authFetch(CONFIG.api.endpoints.extract, {
@@ -2944,7 +3925,7 @@
           const createResponse = await authFetch(CONFIG.api.endpoints.entries, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ inputType, inputText }),
+            body: JSON.stringify({ inputType, inputText, tags: state.composerTags }),
           });
 
           if (!createResponse.ok) throw new Error("Failed to create entry");
@@ -2981,10 +3962,20 @@
           showAlert("Entry created and processed successfully", "success");
           closeRecordingPreview();
           clearForm();
+          state.hasSentThisSession = true;
+          renderComposerHeaderState();
           loadEntries();
         } catch (error) {
           if (!(error instanceof SessionExpiredError)) {
-            showAlert(`Failed to submit entry: ${error.message}`, "error");
+            if (isOfflineError(error)) {
+              // Deliberately don't clear the composer here - the text (and any
+              // recorded audio, still held in state.audioBlob) stays exactly as
+              // typed so hitting Save again once back online just works, rather
+              // than a generic error making it look like the draft was lost.
+              showAlert("You're offline. Your entry is still here — hit Save again once you're back online.", "error");
+            } else {
+              showAlert(`Failed to submit entry: ${error.message}`, "error");
+            }
           }
         }
       }
@@ -2992,6 +3983,15 @@
       // Marks an error as "already handled" (session-expiry redirect already shown)
       // so callers' catch blocks can skip showing their own generic error toast.
       class SessionExpiredError extends Error {}
+
+      // True when a fetch failure was caused by having no network connection
+      // at all, as opposed to a real server-side error (validation failure,
+      // 500, etc.) - browsers throw a plain TypeError ("Failed to fetch") for
+      // the former, and resolve normally (with response.ok === false) for the
+      // latter, so this only ever fires for the true "you're offline" case.
+      function isOfflineError(error) {
+        return !navigator.onLine || (error instanceof TypeError && /fetch|network/i.test(error.message));
+      }
 
       // Drop-in replacement for authenticated fetch() calls. On a 401, redirects to
       // sign-in and throws SessionExpiredError instead of leaving the caller to fail
@@ -3041,6 +4041,42 @@
         container.innerHTML = card.repeat(count);
       }
 
+      // Bumped on every loadEntries() call so an in-flight request that resolves
+      // after a newer one (e.g. rapid search typing) can detect it's stale and
+      // discard its result instead of clobbering more recent entries.
+      let entriesRequestSeq = 0;
+
+      // Read-only offline fallback cache for the unfiltered entries list, so
+      // a dropped connection shows your last-known journal instead of an
+      // error screen. Deliberately one-directional (write on success, read
+      // only when a live fetch fails) - there's no sync/merge logic here,
+      // just "show what we last saw" while offline.
+      function entriesCacheKey() {
+        return state.user?.id ? `sayso_entries_cache_${state.user.id}` : null;
+      }
+
+      function cacheEntries(entries) {
+        const key = entriesCacheKey();
+        if (!key) return;
+        try {
+          localStorage.setItem(key, JSON.stringify({ entries, cachedAt: new Date().toISOString() }));
+        } catch (e) {
+          // Storage full or unavailable (private browsing, etc.) - offline
+          // reading just won't be available this session, nothing to recover.
+        }
+      }
+
+      function readCachedEntries() {
+        const key = entriesCacheKey();
+        if (!key) return null;
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
       async function loadEntries() {
         // Only show the skeleton on a cold load, not on refetches after an
         // archive/trash/create action where entries are already on screen.
@@ -3048,17 +4084,44 @@
         if (isColdLoad) {
           renderEntriesSkeleton();
         }
+        const requestId = ++entriesRequestSeq;
+        const isUnfiltered = !state.searchQuery && !state.activeTagFilter;
         try {
-          const response = await authFetch(CONFIG.api.endpoints.entries);
+          const params = new URLSearchParams();
+          if (state.searchQuery) params.set("q", state.searchQuery);
+          if (state.activeTagFilter) params.set("tag", state.activeTagFilter);
+          const qs = params.toString();
+          const response = await authFetch(qs ? `${CONFIG.api.endpoints.entries}?${qs}` : CONFIG.api.endpoints.entries);
 
           if (!response.ok) throw new Error("Failed to load entries");
 
           const data = await response.json();
+          if (requestId !== entriesRequestSeq) return; // a newer request already superseded this one
+
           const tempEntries = state.entries.filter((e) => e.isTemporary);
           state.entries = [...tempEntries, ...data.data.entries];
           renderEntries();
+
+          // Only the unfiltered baseline view is cached - a search/tag-filtered
+          // result isn't representative of "your journal" and would be a
+          // misleading thing to fall back to later while offline.
+          if (isUnfiltered) cacheEntries(data.data.entries);
         } catch (error) {
+          if (requestId !== entriesRequestSeq) return;
           if (!(error instanceof SessionExpiredError)) {
+            if (isOfflineError(error) && isUnfiltered) {
+              const cached = readCachedEntries();
+              if (cached) {
+                const tempEntries = state.entries.filter((e) => e.isTemporary);
+                state.entries = [...tempEntries, ...cached.entries];
+                renderEntries();
+                showAlert(
+                  `You're offline — showing your journal as of ${new Date(cached.cachedAt).toLocaleString()}.`,
+                  "info"
+                );
+                return;
+              }
+            }
             showAlert(`Failed to load entries: ${error.message}`, "error");
             // Clear a stuck skeleton on failure so the user gets a retry path
             // instead of a screen frozen on shimmering placeholders forever.
@@ -3083,6 +4146,29 @@
 
       function truncate(text, n) {
         return text && text.length > n ? text.slice(0, n) + "…" : text || "";
+      }
+
+      function debounce(fn, delayMs) {
+        let timeoutId;
+        return (...args) => {
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => fn(...args), delayMs);
+        };
+      }
+
+      // Loads the user's full tag vocabulary, used for autocomplete in the composer
+      // and the entry-detail tag editor. Safe to call before entries load.
+      async function loadTags() {
+        try {
+          const response = await authFetch(CONFIG.api.endpoints.tags);
+          if (!response.ok) throw new Error("Failed to load tags");
+          const data = await response.json();
+          state.tags = data.data.tags;
+        } catch (error) {
+          if (!(error instanceof SessionExpiredError)) {
+            console.error("Failed to load tags:", error);
+          }
+        }
       }
 
       // ===== Settings / Facts =====
@@ -3399,6 +4485,28 @@
         });
       }
 
+      function bindTagChipHandlers(root) {
+        root.querySelectorAll(".tag-chip[data-tag-id]").forEach((chip) => {
+          chip.addEventListener("click", (e) => {
+            e.stopPropagation();
+            state.activeTagFilter = chip.dataset.tagId;
+            loadEntries();
+          });
+        });
+      }
+
+      function activeTagFilterPillHtml() {
+        if (!state.activeTagFilter) return "";
+        const tag = state.tags.find((t) => t.id === state.activeTagFilter);
+        const label = tag ? tag.name : "tag";
+        return `
+          <div class="active-tag-filter">
+            Filtering by: ${escapeHtml(label)}
+            <button type="button" id="clearTagFilterBtn" aria-label="Clear tag filter">&times;</button>
+          </div>
+        `;
+      }
+
       function groupEntriesByDate(entries) {
         const groups = [];
         let currentGroupKey = null;
@@ -3414,6 +4522,29 @@
         return groups;
       }
 
+      // Only the main All Entries feed gets semantic "Today"/"Yesterday"/
+      // "Last week" labels - Archive/Trash keep groupEntriesByDate's original
+      // literal weekday+date labels unchanged (those are historical/reference
+      // views where an absolute date reads better than a relative one).
+      function toSemanticLabel(literalLabel, sampleDateIso) {
+        const entryDate = new Date(sampleDateIso);
+        const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const today = startOfDay(new Date());
+        const entryDay = startOfDay(entryDate);
+        const diffDays = Math.round((today - entryDay) / (1000 * 60 * 60 * 24));
+        if (diffDays === 0) return "Today";
+        if (diffDays === 1) return "Yesterday";
+        if (diffDays > 1 && diffDays <= 7) return "Last week";
+        return literalLabel;
+      }
+
+      function groupEntriesByDateSemantic(entries) {
+        return groupEntriesByDate(entries).map((group) => ({
+          ...group,
+          label: toSemanticLabel(group.label, group.entries[0].created_at),
+        }));
+      }
+
       function updateClearTempButton() {
         const hasTemp = state.entries.some((e) => e.isTemporary);
         document.getElementById("clearTempBtn").style.display = hasTemp ? "" : "none";
@@ -3423,12 +4554,27 @@
         const container = document.getElementById("entriesList");
         updateClearTempButton();
 
+        const filterPill = document.getElementById("activeTagFilterRow");
+        if (filterPill) {
+          filterPill.innerHTML = activeTagFilterPillHtml();
+          const clearBtn = document.getElementById("clearTagFilterBtn");
+          if (clearBtn) {
+            clearBtn.addEventListener("click", () => {
+              state.activeTagFilter = null;
+              loadEntries();
+            });
+          }
+        }
+
         if (state.entries.length === 0) {
-          container.innerHTML = '<div class="empty-state"><h3>No entries yet</h3><p>Create your first entry to get started</p></div>';
+          const emptyMessage = state.searchQuery || state.activeTagFilter
+            ? '<div class="empty-state"><h3>No matching entries</h3><p>Try a different search or clear the tag filter</p></div>'
+            : '<div class="empty-state"><h3>No entries yet</h3><p>Create your first entry to get started</p></div>';
+          container.innerHTML = emptyMessage;
           return;
         }
 
-        const groups = groupEntriesByDate(state.entries);
+        const groups = groupEntriesByDateSemantic(state.entries);
 
         container.innerHTML = groups
           .map(
@@ -3443,7 +4589,7 @@
 
         container.querySelectorAll(".entry-card").forEach((card) => {
           card.addEventListener("click", (e) => {
-            if (e.target.closest(".action-point") || e.target.closest(".entry-actions")) return;
+            if (e.target.closest(".action-point") || e.target.closest(".entry-actions") || e.target.closest(".tag-chip")) return;
             openEntryDetail(card.dataset.entryId);
           });
         });
@@ -3451,6 +4597,73 @@
         bindActionPointHandlers(container);
         bindArchiveHandlers(container);
         bindTrashHandlers(container);
+        bindTagChipHandlers(container);
+
+        renderSidebarHistory();
+        renderSidebarOpenCount();
+      }
+
+      // Sidebar history: a lightweight snippet list, deliberately NOT reusing
+      // renderEntryCard (that's sized/styled for the ~720px main feed column
+      // with full action-points/reflection/tags - at 264px sidebar width it
+      // would need parallel CSS overrides for every sub-block). Reflects
+      // whatever state.entries currently holds, so it's scoped to the same
+      // ~50-most-recent-matching-the-active-search-or-filter window as the
+      // main feed, not a separate/unfiltered full history.
+      function renderSidebarHistory() {
+        const container = document.getElementById("sidebarHistoryList");
+        if (!container) return;
+        if (state.entries.length === 0) {
+          container.innerHTML = '<div class="sidebar-history-group-label">No entries yet</div>';
+          return;
+        }
+        const groups = groupEntriesByDateSemantic(state.entries);
+        container.innerHTML = groups
+          .map(
+            (group) => `
+          <div class="sidebar-history-group-label">${group.label}</div>
+          ${group.entries
+            .map((entry) => {
+              const date = new Date(entry.created_at);
+              const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+              const snippet = truncate(entry.input_text, 42);
+              return `
+              <div class="sidebar-history-item" data-entry-id="${entry.id}">
+                <div class="sidebar-history-item-text">${escapeHtml(snippet)}</div>
+                <div class="sidebar-history-item-time">${timeStr}</div>
+              </div>
+            `;
+            })
+            .join("")}
+        `
+          )
+          .join("");
+        container.querySelectorAll(".sidebar-history-item").forEach((item) => {
+          item.addEventListener("click", () => {
+            showView("allEntriesView");
+            openEntryDetail(item.dataset.entryId);
+            closeSidebarDrawer();
+          });
+        });
+      }
+
+      // Derived from state.entries's already-attached action_points (not a
+      // dedicated state.todoActionPoints fetch, which is empty until the
+      // To-do view has been visited). This means the count reflects open
+      // action points among the currently-loaded ~50 most recent entries,
+      // not a true lifetime total - an honest limitation given there's no
+      // "count everything" endpoint today.
+      function computeOpenActionPointCount() {
+        return state.entries
+          .filter((e) => !e.isTemporary)
+          .reduce((sum, e) => sum + (e.action_points || []).filter((ap) => !ap.completed).length, 0);
+      }
+
+      function renderSidebarOpenCount() {
+        const el = document.getElementById("sidebarOpenCount");
+        if (!el) return;
+        const count = computeOpenActionPointCount();
+        el.textContent = count === 0 ? "All caught up" : `${count} thing${count === 1 ? "" : "s"} still open`;
       }
 
       function badgeHtml(inputType) {
@@ -3633,6 +4846,17 @@
         `;
       }
 
+      function tagsHtml(entryTags) {
+        if (!entryTags || entryTags.length === 0) return "";
+        return `
+          <div class="entry-tags">
+            ${entryTags
+              .map((t) => `<button type="button" class="tag-chip" data-tag-id="${t.id}">${escapeHtml(t.name)}</button>`)
+              .join("")}
+          </div>
+        `;
+      }
+
       function chatMessageHtml(role, content) {
         return `
           <div class="chat-message chat-message-${role}">
@@ -3696,6 +4920,7 @@
               <span class="entry-time">${timeStr}</span>
               ${actionsHtml}
             </div>
+            ${tagsHtml(entry.tags || [])}
             <div class="entry-input">${escapeHtml(entry.input_text)}</div>
             ${extractingHtml}
             ${actionPointsSection}
@@ -3706,6 +4931,260 @@
       }
 
       // ===== Entry Detail =====
+      function detailTagEditorHtml(entryTags) {
+        return `
+          <div class="detail-section">
+            <div class="composer-tags" id="detailTagsRow">
+              <div class="tag-chip-list" id="detailTagChips">
+                ${entryTags
+                  .map(
+                    (t) => `
+                  <span class="tag-chip" data-tag-id="${t.id}">
+                    ${escapeHtml(t.name)}
+                    <button type="button" class="tag-chip-remove" data-tag-id="${t.id}" aria-label="Remove tag">&times;</button>
+                  </span>
+                `
+                  )
+                  .join("")}
+              </div>
+              <input type="text" id="detailTagInput" class="tag-input" placeholder="Add tag…" autocomplete="off" />
+              <div class="tag-autocomplete-list" id="detailTagAutocomplete"></div>
+            </div>
+          </div>
+        `;
+      }
+
+      async function saveEntryTags(entryId, tagNames) {
+        const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/tags`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tags: tagNames }),
+        });
+        if (!response.ok) throw new Error("Failed to update tags");
+        const data = await response.json();
+        return data.data.tags;
+      }
+
+      function bindDetailTagEditor(card, entryId) {
+        const input = card.querySelector("#detailTagInput");
+        const chipsContainer = card.querySelector("#detailTagChips");
+        const autocompleteList = card.querySelector("#detailTagAutocomplete");
+        if (!input || !chipsContainer) return;
+
+        async function applyTagChange(newTagNames) {
+          try {
+            const updatedTags = await saveEntryTags(entryId, newTagNames);
+            const entry = state.entries.find((e) => e.id === entryId);
+            if (entry) entry.tags = updatedTags;
+            chipsContainer.innerHTML = updatedTags
+              .map(
+                (t) => `
+              <span class="tag-chip" data-tag-id="${t.id}">
+                ${escapeHtml(t.name)}
+                <button type="button" class="tag-chip-remove" data-tag-id="${t.id}" aria-label="Remove tag">&times;</button>
+              </span>
+            `
+              )
+              .join("");
+            bindRemoveButtons();
+            renderEntries();
+          } catch (error) {
+            if (!(error instanceof SessionExpiredError)) {
+              showAlert(`Failed to update tags: ${error.message}`, "error");
+            }
+          }
+        }
+
+        function currentTagNames() {
+          const entry = state.entries.find((e) => e.id === entryId);
+          return (entry?.tags || []).map((t) => t.name);
+        }
+
+        function bindRemoveButtons() {
+          chipsContainer.querySelectorAll(".tag-chip-remove").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const entry = state.entries.find((ent) => ent.id === entryId);
+              const remaining = (entry?.tags || []).filter((t) => t.id !== btn.dataset.tagId).map((t) => t.name);
+              applyTagChange(remaining);
+            });
+          });
+        }
+        bindRemoveButtons();
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === ",") {
+            e.preventDefault();
+            const trimmed = input.value.trim();
+            if (!trimmed) return;
+            const names = currentTagNames();
+            if (names.some((n) => n.toLowerCase() === trimmed.toLowerCase())) {
+              input.value = "";
+              return;
+            }
+            applyTagChange([...names, trimmed]);
+            input.value = "";
+            if (autocompleteList) autocompleteList.classList.remove("visible");
+          }
+        });
+
+        if (autocompleteList) {
+          const showSuggestions = debounce(async (prefix) => {
+            if (!prefix) {
+              autocompleteList.classList.remove("visible");
+              return;
+            }
+            try {
+              const response = await authFetch(`${CONFIG.api.endpoints.tags}?prefix=${encodeURIComponent(prefix)}`);
+              if (!response.ok) throw new Error("Failed to fetch tag suggestions");
+              const data = await response.json();
+              const names = currentTagNames();
+              const suggestions = data.data.tags.filter(
+                (t) => !names.some((existing) => existing.toLowerCase() === t.name.toLowerCase())
+              );
+              if (suggestions.length === 0) {
+                autocompleteList.classList.remove("visible");
+                return;
+              }
+              autocompleteList.innerHTML = suggestions
+                .map((t) => `<button type="button" class="tag-autocomplete-item" data-name="${escapeHtml(t.name)}">${escapeHtml(t.name)}</button>`)
+                .join("");
+              autocompleteList.classList.add("visible");
+              autocompleteList.querySelectorAll(".tag-autocomplete-item").forEach((item) => {
+                item.addEventListener("click", () => {
+                  applyTagChange([...currentTagNames(), item.dataset.name]);
+                  input.value = "";
+                  autocompleteList.classList.remove("visible");
+                  input.focus();
+                });
+              });
+            } catch (error) {
+              if (!(error instanceof SessionExpiredError)) {
+                console.error("Failed to fetch tag suggestions:", error);
+              }
+            }
+          }, 250);
+
+          input.addEventListener("input", () => showSuggestions(input.value.trim()));
+          input.addEventListener("blur", () => {
+            setTimeout(() => autocompleteList.classList.remove("visible"), 150);
+          });
+        }
+      }
+
+      async function saveEntryText(entryId, newText) {
+        const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inputText: newText }),
+        });
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}));
+          throw new Error(data?.error?.message || "Failed to save changes");
+        }
+        return response.json();
+      }
+
+      function bindDetailTextEditor(card, entryId) {
+        const editBtn = card.querySelector("#detailEditTextBtn");
+        const bodyEl = card.querySelector("#detailBodyText");
+        const promptRow = card.querySelector("#reExtractPromptRow");
+        if (!editBtn || !bodyEl) return;
+
+        editBtn.addEventListener("click", () => {
+          const entry = state.entries.find((e) => e.id === entryId);
+          if (!entry) return;
+
+          promptRow.innerHTML = "";
+          bodyEl.outerHTML = `
+            <div class="detail-text-editor" id="detailTextEditorWrap" style="flex: 1;">
+              <textarea id="detailTextInput">${escapeHtml(entry.input_text)}</textarea>
+              <div class="detail-text-editor-actions">
+                <button type="button" class="btn-cancel" id="detailTextCancelBtn">Cancel</button>
+                <button type="button" class="btn-submit" id="detailTextSaveBtn">Save</button>
+              </div>
+            </div>
+          `;
+          editBtn.style.display = "none";
+
+          const textarea = card.querySelector("#detailTextInput");
+          textarea.focus();
+          textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+          card.querySelector("#detailTextCancelBtn").addEventListener("click", () => {
+            openEntryDetail(entryId);
+          });
+
+          card.querySelector("#detailTextSaveBtn").addEventListener("click", async () => {
+            const newText = textarea.value.trim();
+            if (!newText) {
+              showAlert("Entry text can't be empty", "error");
+              return;
+            }
+            const saveBtn = card.querySelector("#detailTextSaveBtn");
+            saveBtn.disabled = true;
+            saveBtn.textContent = "Saving…";
+            try {
+              await saveEntryText(entryId, newText);
+              const liveEntry = state.entries.find((e) => e.id === entryId);
+              if (liveEntry) liveEntry.input_text = newText;
+              renderEntries();
+              openEntryDetail(entryId);
+              showReExtractPrompt(entryId, newText);
+            } catch (error) {
+              if (!(error instanceof SessionExpiredError)) {
+                showAlert(`Failed to save changes: ${error.message}`, "error");
+              }
+              saveBtn.disabled = false;
+              saveBtn.textContent = "Save";
+            }
+          });
+        });
+      }
+
+      // Shown once, right after a successful text edit - re-extraction is
+      // always opt-in (extract.js appends action points rather than
+      // replacing them, so silently re-running it on every edit would create
+      // duplicates; this lets the user decide instead).
+      function showReExtractPrompt(entryId, newText) {
+        const promptRow = document.querySelector(`#detailCard[data-entry-id="${entryId}"] #reExtractPromptRow`);
+        if (!promptRow) return;
+        promptRow.innerHTML = `
+          <div class="re-extract-prompt">
+            <span>Re-run AI reflection on the edited text?</span>
+            <button type="button" class="btn-secondary" id="reExtractBtn">Re-run</button>
+          </div>
+        `;
+        document.getElementById("reExtractBtn").addEventListener("click", async () => {
+          const btn = document.getElementById("reExtractBtn");
+          btn.disabled = true;
+          btn.textContent = "Working…";
+          try {
+            const response = await authFetch(CONFIG.api.endpoints.extract, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ entryId, userInput: newText, clearIncompleteActionPoints: true }),
+            });
+            if (!response.ok) throw new Error("Failed to re-run extraction");
+            // The extract response's actionPoints list is only the freshly
+            // created rows for this call, not the entry's full set (completed
+            // ones from before the edit were deliberately kept server-side but
+            // aren't included there) - refetch the canonical list instead of
+            // trusting that partial response, so completed action points don't
+            // appear to vanish from the UI even though they survived in the DB.
+            await loadEntries();
+            openEntryDetail(entryId);
+            showAlert("Reflection updated", "success");
+          } catch (error) {
+            if (!(error instanceof SessionExpiredError)) {
+              showAlert(`Failed to re-run extraction: ${error.message}`, "error");
+            }
+            btn.disabled = false;
+            btn.textContent = "Re-run";
+          }
+        });
+      }
+
       function openEntryDetail(entryId) {
         const entry = state.entries.find((e) => e.id === entryId);
         if (!entry) return;
@@ -3724,14 +5203,23 @@
             <span class="detail-datetime">${dateStr} &middot; ${timeStr}</span>
           </div>
 
-          <div class="detail-body">${escapeHtml(entry.input_text)}</div>
+          <div class="detail-body-row">
+            <div class="detail-body" id="detailBodyText">${escapeHtml(entry.input_text)}</div>
+            ${entry.isTemporary ? "" : '<button type="button" class="detail-edit-btn" id="detailEditTextBtn" aria-label="Edit entry text">&#9998;</button>'}
+          </div>
+          <div id="reExtractPromptRow"></div>
 
-          <div class="detail-section">${actionPointsHtml(entry.action_points)}</div>
-          <div class="detail-section">${reflectionHtml(entry.reflection)}</div>
+          <div class="detail-section" id="detailActionPointsSection">${actionPointsHtml(entry.action_points)}</div>
+          <div class="detail-section" id="detailReflectionSection">${reflectionHtml(entry.reflection)}</div>
+          ${entry.isTemporary ? "" : detailTagEditorHtml(entry.tags || [])}
           <div class="detail-section">${chatThreadHtml(entry)}</div>
         `;
 
         bindActionPointHandlers(card);
+        if (!entry.isTemporary) {
+          bindDetailTagEditor(card, entryId);
+          bindDetailTextEditor(card, entryId);
+        }
 
         document.getElementById("detailCloseBtn").addEventListener("click", closeEntryDetail);
         document.getElementById("detailOverlay").classList.add("active");
@@ -4156,6 +5644,53 @@
         document.getElementById("guideScreen").classList.remove("active");
         document.getElementById("firstEntryScreen").classList.remove("active");
         document.getElementById("appScreen").classList.remove("active");
+        // Re-run the light-rays effect now that the auth screen has actual
+        // size (it was display:none, so the WebGL canvas had nothing to size
+        // itself against) - a no-op if it's already running.
+        if (window.restartAuthRays) window.restartAuthRays();
+      }
+
+      // Hides the sign-in/sign-up tabs+forms and shows "You're already signed
+      // in as X" instead, so an existing session can't silently swallow an
+      // explicit ?tab=signin/signup navigation, and the raw form isn't shown
+      // to someone who can't usefully submit it without logging out first.
+      function showAuthSessionInterstitial(user) {
+        document.getElementById("authTabs").style.display = "none";
+        document.querySelectorAll(".auth-form").forEach((f) => (f.style.display = "none"));
+        document.getElementById("authSessionUserLabel").textContent = displayName(user);
+        document.getElementById("authSessionInterstitial").classList.add("active");
+        showAuthScreen();
+      }
+
+      function hideAuthSessionInterstitial() {
+        document.getElementById("authSessionInterstitial").classList.remove("active");
+        document.getElementById("authTabs").style.display = "";
+        document.querySelectorAll(".auth-form").forEach((f) => (f.style.display = ""));
+      }
+
+      // Entry point for explicit ?tab=signin/signup navigation: checks whether
+      // a session already exists before deciding what to show, instead of
+      // blindly showing the form (checkAuth()'s job) or blindly restoring the
+      // session (which is what the bare "else" branch below does on purpose).
+      async function showAuthTabRespectingSession(tabType) {
+        try {
+          const response = await fetch(CONFIG.api.endpoints.me, { credentials: "include" });
+          if (response.ok) {
+            const data = await response.json();
+            state.user = data.data.user;
+            hideAuthSessionInterstitial();
+            switchAuthTab(tabType);
+            if (tabType === "signup") resetSignupWizard();
+            showAuthSessionInterstitial(state.user);
+            return;
+          }
+        } catch (error) {
+          // Treat a failed session check the same as "no session" - fall through to the form.
+        }
+        hideAuthSessionInterstitial();
+        switchAuthTab(tabType);
+        if (tabType === "signup") resetSignupWizard();
+        showAuthScreen();
       }
 
       function showGuideScreen() {
@@ -4224,18 +5759,39 @@
       function showView(viewId) {
         document.querySelectorAll(".view").forEach((v) => v.classList.toggle("active", v.id === viewId));
         document.querySelectorAll(".sidebar-link[data-view]").forEach((l) => l.classList.toggle("active", l.dataset.view === viewId));
-        document.getElementById("tabbarEntriesLink").classList.toggle("active", viewId === "allEntriesView");
-        document.querySelector(".content-heading").textContent = VIEW_HEADINGS[viewId];
         document.querySelector(".entry-form").style.display = viewId === "allEntriesView" ? "" : "none";
+        if (viewId === "allEntriesView") {
+          renderComposerHeaderState();
+        } else {
+          document.getElementById("contentHeading").textContent = VIEW_HEADINGS[viewId];
+          document.getElementById("contentSubheading").style.display = "none";
+        }
         VIEW_LOADERS[viewId]?.();
       }
 
-      function openMoreSheet() {
-        document.getElementById("moreSheetOverlay").classList.add("active");
+      function greetingText() {
+        const hour = new Date().getHours();
+        if (hour < 5) return "Still up? 🌙";
+        if (hour < 12) return "Good morning 👋";
+        if (hour < 18) return "Good afternoon 👋";
+        return "Good evening 👋";
       }
 
-      function closeMoreSheet() {
-        document.getElementById("moreSheetOverlay").classList.remove("active");
+      // Drives the home view's greeting/subtitle/suggestion-chips, all of
+      // which flip together the moment the user sends their first entry
+      // this session (not persisted - "this session" means this page load).
+      function renderComposerHeaderState() {
+        const heading = document.getElementById("contentHeading");
+        const subheading = document.getElementById("contentSubheading");
+        const chips = document.getElementById("suggestionChips");
+        if (!heading || !subheading) return;
+
+        heading.textContent = greetingText();
+        subheading.style.display = "";
+        subheading.textContent = state.hasSentThisSession
+          ? "Whenever you're ready for the next one."
+          : "What's on your mind today?";
+        if (chips) chips.style.display = state.hasSentThisSession ? "none" : "";
       }
 
       function switchAuthTab(tabType) {
@@ -4288,6 +5844,12 @@
         document.getElementById("textInput").value = "";
         autoGrowTextarea();
         setComposerMode("idle");
+        state.composerTags = [];
+        renderComposerTagChips();
+        document.getElementById("submitBtn").disabled = true;
+        state.currentInputType = "text";
+        document.getElementById("composerTextTabBtn")?.classList.add("active");
+        document.getElementById("composerVoiceTabBtn")?.classList.remove("active");
       }
 
       function escapeHtml(text) {
@@ -4318,6 +5880,13 @@
         localStorage.setItem("theme", value);
         applyTheme(value);
         renderThemeToggle();
+        // The auth-screen light rays are tinted from the theme's --gold
+        // variable, so switching themes needs to re-tint them too, not just
+        // the rest of the UI.
+        if (window.restartAuthRays) window.restartAuthRays();
+        // Same for any mounted curved-input fields (signup wizard) - each
+        // instance registers a retint callback with curved-input.js.
+        if (window.curvedInputRetintCallbacks) window.curvedInputRetintCallbacks.forEach((fn) => fn());
       }
 
       function renderThemeToggle() {
@@ -4325,13 +5894,68 @@
         document.querySelectorAll("#themeToggle .auth-tab").forEach((btn) => {
           btn.classList.toggle("active", btn.dataset.themeValue === current);
         });
+        renderSidebarThemeRow(current);
+      }
+
+      // The sidebar's theme row is a compact click-to-cycle shortcut on top
+      // of the same setTheme()/localStorage mechanism as Settings' full
+      // 3-way Light/Dark/System control - it does not replace or duplicate
+      // that control, and deliberately preserves "System" as one of the
+      // cycle stops rather than collapsing to a 2-way toggle, so a user on
+      // System mode (following the OS) never gets silently switched off it.
+      const THEME_CYCLE = ["light", "dark", "system"];
+
+      function renderSidebarThemeRow(current) {
+        const dot = document.getElementById("sidebarThemeDot");
+        const label = document.getElementById("sidebarThemeLabel");
+        if (!dot || !label) return;
+        const labels = { light: "Light mode", dark: "Dark mode", system: "System theme" };
+        label.textContent = labels[current] || "Theme";
+      }
+
+      function cycleSidebarTheme() {
+        const current = localStorage.getItem("theme") || "system";
+        const nextIndex = (THEME_CYCLE.indexOf(current) + 1) % THEME_CYCLE.length;
+        setTheme(THEME_CYCLE[nextIndex]);
+      }
+
+      // ===== Sidebar collapse/expand (desktop) + mobile drawer =====
+      function applySidebarCollapsed(collapsed) {
+        document.getElementById("appSidebar").classList.toggle("collapsed", collapsed);
+      }
+
+      function toggleSidebarCollapsed() {
+        state.sidebarCollapsed = !state.sidebarCollapsed;
+        try {
+          localStorage.setItem("sayso_sidebar_collapsed", state.sidebarCollapsed ? "1" : "0");
+        } catch (e) {}
+        applySidebarCollapsed(state.sidebarCollapsed);
+      }
+
+      function openSidebarDrawer() {
+        state.sidebarMobileOpen = true;
+        document.getElementById("appSidebar").classList.add("mobile-open");
+        document.getElementById("sidebarBackdrop").classList.add("active");
+      }
+
+      function closeSidebarDrawer() {
+        state.sidebarMobileOpen = false;
+        document.getElementById("appSidebar").classList.remove("mobile-open");
+        document.getElementById("sidebarBackdrop").classList.remove("active");
+      }
+
+      function isMobileViewport() {
+        return window.matchMedia("(max-width: 860px)").matches;
       }
 
       // ===== Event Listeners =====
       document.addEventListener("DOMContentLoaded", () => {
         // Auth tab switcher (segmented control)
         document.querySelectorAll(".auth-tabs:not(#themeToggle) .auth-tab").forEach((tab) => {
-          tab.addEventListener("click", () => switchAuthTab(tab.dataset.tab));
+          tab.addEventListener("click", () => {
+            switchAuthTab(tab.dataset.tab);
+            if (tab.dataset.tab === "signup") resetSignupWizard();
+          });
         });
 
         // Theme toggle (segmented control)
@@ -4344,6 +5968,7 @@
           link.addEventListener("click", (e) => {
             e.preventDefault();
             switchAuthTab(link.dataset.switchTab);
+            if (link.dataset.switchTab === "signup") resetSignupWizard();
           });
         });
 
@@ -4367,14 +5992,13 @@
           await handleSignin(email, password, rememberMe);
         });
 
-        document.getElementById("signupForm").addEventListener("submit", async (e) => {
-          e.preventDefault();
-          if (!validateAuthForm("signup")) return;
-          const email = document.getElementById("signup-email").value;
-          const password = document.getElementById("signup-password").value;
-          const name = document.getElementById("signup-name").value.trim();
-          await handleSignup(email, password, name);
-        });
+        // Signup is now a step-by-step wizard (see "Signup Wizard" section
+        // above) - Enter key submits via each curved-input's own onSubmit
+        // (wired to advanceSignupWizard), not this form's submit event.
+        document.getElementById("signupForm").addEventListener("submit", (e) => e.preventDefault());
+        document.getElementById("signupWizardContinueBtn").addEventListener("click", advanceSignupWizard);
+        document.getElementById("signupWizardBackBtn").addEventListener("click", retreatSignupWizard);
+        renderSignupWizardStep();
 
         document.getElementById("forgotForm").addEventListener("submit", async (e) => {
           e.preventDefault();
@@ -4391,7 +6015,58 @@
         document.getElementById("cancelRecordBtn").addEventListener("click", cancelRecording);
         document.getElementById("pauseResumeBtn").addEventListener("click", togglePauseResume);
         document.getElementById("finishRecordBtn").addEventListener("click", finishRecording);
-        document.getElementById("textInput").addEventListener("input", autoGrowTextarea);
+        document.getElementById("textInput").addEventListener("input", (e) => {
+          autoGrowTextarea();
+          document.getElementById("submitBtn").disabled = !e.target.value.trim();
+        });
+        document.getElementById("textInput").addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey && state.currentInputType === "text" && state.composerMode === "idle") {
+            e.preventDefault();
+            submitEntry();
+          }
+        });
+
+        // Composer Text/Voice tabs - Voice triggers the same recording flow
+        // that used to start from the always-visible mic button; Text just
+        // resets composerMode if a recording was in progress.
+        document.getElementById("composerTextTabBtn").addEventListener("click", () => {
+          state.currentInputType = "text";
+          document.getElementById("composerTextTabBtn").classList.add("active");
+          document.getElementById("composerVoiceTabBtn").classList.remove("active");
+          if (state.composerMode !== "idle" && state.composerMode !== "previewing") {
+            cancelRecording();
+          }
+        });
+        document.getElementById("composerVoiceTabBtn").addEventListener("click", () => {
+          state.currentInputType = "voice";
+          document.getElementById("composerVoiceTabBtn").classList.add("active");
+          document.getElementById("composerTextTabBtn").classList.remove("active");
+          if (state.composerMode === "idle") startRecording();
+        });
+
+        // Suggestion chips: prefill the composer, don't submit
+        document.querySelectorAll(".suggestion-chip").forEach((chip) => {
+          chip.addEventListener("click", () => {
+            const textInput = document.getElementById("textInput");
+            textInput.value = chip.dataset.prefill;
+            autoGrowTextarea();
+            document.getElementById("submitBtn").disabled = !textInput.value.trim();
+            textInput.focus();
+            textInput.setSelectionRange(textInput.value.length, textInput.value.length);
+          });
+        });
+
+        // Entry search (debounced, server-side)
+        document.getElementById("entrySearchInput").addEventListener(
+          "input",
+          debounce((e) => {
+            state.searchQuery = e.target.value.trim();
+            loadEntries();
+          }, 300)
+        );
+
+        // Composer tag input
+        bindComposerTagInput();
 
         // Form actions (plain-text path)
         document.getElementById("submitBtn").addEventListener("click", () => submitEntry());
@@ -4438,12 +6113,49 @@
         // Logout
         document.getElementById("logoutBtn").addEventListener("click", handleLogout);
 
-        // Mobile tab bar: Create scrolls to the composer and focuses it
-        document.getElementById("tabbarCreateBtn").addEventListener("click", () => {
+        // "Already signed in" interstitial (shown for explicit ?tab=signin/signup
+        // navigation when a session already exists - see showAuthTabRespectingSession)
+        document.getElementById("authSessionLogoutBtn").addEventListener("click", async () => {
+          await handleLogout();
+          hideAuthSessionInterstitial();
+          const requestedTab = new URLSearchParams(window.location.search).get("tab") || "signup";
+          switchAuthTab(requestedTab);
+        });
+        document.getElementById("authSessionContinueBtn").addEventListener("click", () => {
+          hideAuthSessionInterstitial();
+          enterApp();
+        });
+
+        // New Entry (sidebar button, desktop + mobile): scrolls to the
+        // composer and focuses it, closing the mobile drawer if it was open.
+        document.getElementById("newEntryBtn").addEventListener("click", () => {
           showView("allEntriesView");
           const form = document.querySelector(".entry-form");
           form.scrollIntoView({ behavior: "smooth", block: "start" });
           document.getElementById("textInput").focus();
+          if (isMobileViewport()) closeSidebarDrawer();
+        });
+
+        // Sidebar collapse (desktop) / drawer (mobile)
+        applySidebarCollapsed(state.sidebarCollapsed);
+        document.getElementById("sidebarCollapseBtn").addEventListener("click", () => {
+          if (isMobileViewport()) {
+            closeSidebarDrawer();
+          } else {
+            toggleSidebarCollapsed();
+          }
+        });
+        document.getElementById("hamburgerBtn").addEventListener("click", openSidebarDrawer);
+        document.getElementById("sidebarBackdrop").addEventListener("click", closeSidebarDrawer);
+
+        // Sidebar theme row: cycles light -> dark -> system, same setTheme() mechanism as Settings
+        document.getElementById("sidebarThemeRow").addEventListener("click", cycleSidebarTheme);
+
+        // Sidebar "N things still open" - scrolls to the entries feed
+        document.getElementById("sidebarOpenCount").addEventListener("click", () => {
+          showView("allEntriesView");
+          document.getElementById("entriesList").scrollIntoView({ behavior: "smooth", block: "start" });
+          if (isMobileViewport()) closeSidebarDrawer();
         });
 
         // Guide screen -> guided first entry
@@ -4476,33 +6188,17 @@
         document.addEventListener("keydown", (e) => {
           if (e.key === "Escape") {
             closeEntryDetail();
-            closeMoreSheet();
+            closeSidebarDrawer();
             if (state.composerMode === "previewing") closeRecordingPreview();
           }
         });
 
-        // Sidebar navigation
+        // Sidebar navigation (also closes the mobile drawer on click)
         document.querySelectorAll(".sidebar-link[data-view]").forEach((link) => {
           link.addEventListener("click", (e) => {
             e.preventDefault();
             showView(link.dataset.view);
-          });
-        });
-
-        // Mobile tab bar: Entries + More sheet
-        document.getElementById("tabbarEntriesLink").addEventListener("click", (e) => {
-          e.preventDefault();
-          showView("allEntriesView");
-        });
-        document.getElementById("tabbarMoreBtn").addEventListener("click", openMoreSheet);
-        document.getElementById("moreSheetOverlay").addEventListener("click", (e) => {
-          if (e.target.id === "moreSheetOverlay") closeMoreSheet();
-        });
-        document.querySelectorAll(".more-sheet-link[data-view]").forEach((link) => {
-          link.addEventListener("click", (e) => {
-            e.preventDefault();
-            closeMoreSheet();
-            showView(link.dataset.view);
+            if (isMobileViewport()) closeSidebarDrawer();
           });
         });
 
@@ -4534,6 +6230,36 @@
             if (!(error instanceof SessionExpiredError)) {
               showAlert(`Failed to save profile: ${error.message}`, "error");
             }
+          }
+        });
+
+        // Export data as JSON
+        document.getElementById("exportDataBtn").addEventListener("click", async () => {
+          const btn = document.getElementById("exportDataBtn");
+          btn.disabled = true;
+          btn.textContent = "Exporting…";
+          try {
+            const response = await authFetch(CONFIG.api.endpoints.export);
+            if (!response.ok) throw new Error("Failed to export entries");
+            const data = await response.json();
+            const json = JSON.stringify(data.data, null, 2);
+            const blob = new Blob([json], { type: "application/json" });
+            const objectUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = objectUrl;
+            a.download = `say-so-export-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(objectUrl);
+            showAlert("Export downloaded", "success");
+          } catch (error) {
+            if (!(error instanceof SessionExpiredError)) {
+              showAlert(`Failed to export: ${error.message}`, "error");
+            }
+          } finally {
+            btn.disabled = false;
+            btn.textContent = "Export as JSON";
           }
         });
 
@@ -4591,18 +6317,94 @@
 
         // Initialize
         initVoiceRecognition();
+        // The <head> script already applied the saved/OS theme before first
+        // paint (avoiding a flash) - this just syncs the Settings toggle's
+        // active-button highlight to match, so it's not showing a stale
+        // selection if you open Settings without having visited it this load.
+        renderThemeToggle();
         const initialParams = new URLSearchParams(window.location.search);
+        const requestedTab = initialParams.get("tab");
         if (initialParams.has("resetToken")) {
           switchAuthTab("reset");
           showAuthScreen();
-        } else if (initialParams.get("tab") === "signin") {
-          switchAuthTab("signin");
-          showAuthScreen();
+        } else if (requestedTab === "signin" || requestedTab === "signup") {
+          // Explicit navigation to the auth form: don't silently restore an
+          // existing session into this navigation, but don't hide that a
+          // session exists either - checkAuth() below is for the bare "/app"
+          // case where restoring the session IS the intended behavior.
+          showAuthTabRespectingSession(requestedTab);
         } else {
           checkAuth();
         }
         showView("allEntriesView");
       });
+
+      // Registers the app-shell service worker so repeat visits load
+      // instantly and the app is installable. Never blocks anything above -
+      // registration failing (unsupported browser, etc.) is silently fine.
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").catch(() => {});
+        });
+      }
+    </script>
+    <script type="module">
+      import { initLightRays } from "/light-rays.js";
+      import { initCurvedInput } from "/curved-input.js";
+
+      // Exposed so the classic (non-module) script above - where all the
+      // wizard/app logic lives - can call it, same reason restartAuthRays is
+      // exposed this way rather than restructuring the whole app into modules.
+      window.initCurvedInput = initCurvedInput;
+      // Module scripts run after the classic script's DOMContentLoaded
+      // handler already fired renderSignupWizardStep() once (which no-ops
+      // until initCurvedInput exists) - mount the first step's curved input
+      // now that it's actually available.
+      if (typeof renderSignupWizardStep === "function") {
+        renderSignupWizardStep();
+      }
+
+      let destroyAuthRays = null;
+
+      function startAuthRays() {
+        if (destroyAuthRays) {
+          destroyAuthRays();
+          destroyAuthRays = null;
+        }
+        const container = document.getElementById("authRays");
+        if (!container) return;
+
+        // Tint the rays from the current theme's gold accent (read live off
+        // the CSS custom property) so they match light/dark mode automatically
+        // and stay in sync if the theme is switched while the auth screen is open.
+        const goldHex = getComputedStyle(document.documentElement).getPropertyValue("--gold").trim();
+
+        destroyAuthRays = initLightRays(container, {
+          raysOrigin: "top-center",
+          raysColor: goldHex || "#b8873a",
+          raysSpeed: 0.9,
+          lightSpread: 0.65,
+          rayLength: 1.4,
+          fadeDistance: 1.1,
+          saturation: 1.3,
+          followMouse: true,
+          mouseInfluence: 0.12,
+          noiseAmount: 0.06,
+          distortion: 0.04,
+        });
+      }
+
+      // Exposed so setTheme() can re-tint the rays immediately on a theme
+      // switch, without a page reload.
+      window.restartAuthRays = () => {
+        if (document.getElementById("authScreen")?.classList.contains("active")) {
+          startAuthRays();
+        }
+      };
+
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        startAuthRays();
+      }
     </script>
   </body>
 </html>

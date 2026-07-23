@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
   try {
     const userId = requireAuth(req);
-    const { entryId, userInput } = req.body;
+    const { entryId, userInput, clearIncompleteActionPoints } = req.body;
 
     // Validate input
     if (!userInput) {
@@ -37,6 +37,14 @@ export default async function handler(req, res) {
           error: { message: "Entry not found" },
         });
       }
+    }
+
+    // Re-extraction after an entry's text was edited: clear stale incomplete
+    // action points from the old text before adding fresh ones below, but
+    // never on ordinary creation (this flag is never sent there), and never
+    // touch already-completed action points - those are real finished work.
+    if (entryId && clearIncompleteActionPoints) {
+      await apTable.deleteIncompleteByEntryId(entryId, userId);
     }
 
     // If entryId provided, fetch this user's known facts to inject as context
