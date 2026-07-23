@@ -13,7 +13,14 @@
     { "source": "/api/entries/:id/tags", "destination": "/api/entries" },
     { "source": "/api/entries/archived", "destination": "/api/entries" },
     { "source": "/api/entries/trash", "destination": "/api/entries" },
-    { "source": "/api/entries/:id", "destination": "/api/entries" }
+    { "source": "/api/entries/:id", "destination": "/api/entries" },
+    { "source": "/api/auth/login", "destination": "/api/auth" },
+    { "source": "/api/auth/logout", "destination": "/api/auth" },
+    { "source": "/api/auth/me", "destination": "/api/auth" },
+    { "source": "/api/auth/password-reset", "destination": "/api/auth" },
+    { "source": "/api/auth/picture", "destination": "/api/auth" },
+    { "source": "/api/auth/profile", "destination": "/api/auth" },
+    { "source": "/api/auth/signup", "destination": "/api/auth" }
   ],
   "crons": [
     { "path": "/api/cron/reminders", "schedule": "0 13 * * *" }
