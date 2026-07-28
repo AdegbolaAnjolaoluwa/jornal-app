@@ -151,11 +151,27 @@ Respond with raw JSON only, no markdown fences, no commentary.`,
     temperature: 0.7,
     retryAttempts: 3,
     retryDelayMs: 1000,
+    // Bounds a single Groq call so a hung connection fails fast and
+    // catchably instead of stacking retries past the platform's own
+    // function timeout (10s on Vercel Hobby), which kills the whole
+    // invocation with no clean error response.
+    requestTimeoutMs: 8000,
   },
 
   // Authentication settings
   auth: {
     jwtSecret: process.env.JWT_SECRET,
+    // Locked to a single symmetric algorithm on both sign and verify, so a
+    // token forged with a different/weaker algorithm (or "none") can never
+    // be accepted - this is passed explicitly to jwt.verify()'s `algorithms`
+    // allowlist, not left to the library default.
+    jwtAlgorithm: "HS256",
+    // iss/aud are static, app-internal binding values (this app has no other
+    // token issuer/consumer) - they add a second, independent check beyond
+    // the signature itself, so a token that's otherwise structurally valid
+    // but wasn't actually minted by this app's signToken() is still rejected.
+    jwtIssuer: "sayso-app",
+    jwtAudience: "sayso-app-users",
     // Default session: expires when the browser closes (no cookie Max-Age), backed
     // by a short-lived JWT so a persisted cookie jar can't outlive it regardless.
     // "Remember me" issues a JWT + cookie that both last 30 days instead.

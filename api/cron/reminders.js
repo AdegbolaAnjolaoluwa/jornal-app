@@ -8,6 +8,7 @@
 
 import { actionPoints as apTable } from "../../lib/db.js";
 import { sendReminderEmail } from "../../lib/email.js";
+import { pruneRateLimits } from "../../lib/rateLimit.js";
 
 export default async function handler(req, res) {
   const authHeader = req.headers.authorization || "";
@@ -19,6 +20,9 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Best-effort; a failed prune shouldn't stop reminders from sending.
+    pruneRateLimits().catch((err) => console.error("Rate limit prune failed (non-fatal):", err.message));
+
     const due = await apTable.findDueReminders();
 
     const results = [];

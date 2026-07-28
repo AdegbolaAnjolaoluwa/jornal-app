@@ -24,13 +24,26 @@ import {
   requireAuth,
   generateResetToken,
   hashResetToken,
+  invalidateTokenVersionCache,
 } from "../lib/auth.js";
+import { logSecurityEvent } from "../lib/securityLog.js";
 import { sendPasswordResetEmail } from "../lib/email.js";
+import { enforceRateLimit, enforceRateLimits, getClientIp } from "../lib/rateLimit.js";
+import { isValidImage } from "../lib/fileSignature.js";
 import url from "url";
 
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const MAX_PICTURE_UPLOAD_BYTES = 1.5 * 1024 * 1024;
 const ALLOWED_PICTURE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+// Two limits per sensitive route: by IP (stops one attacker cycling through
+// many target emails) and by the email/key being acted on (stops many IPs
+// hammering one target - e.g. a botnet). Both must pass.
+const LOGIN_IP_LIMIT = { maxAttempts: 20, windowMs: 15 * 60 * 1000 };
+const LOGIN_EMAIL_LIMIT = { maxAttempts: 8, windowMs: 15 * 60 * 1000 };
+const SIGNUP_IP_LIMIT = { maxAttempts: 10, windowMs: 60 * 60 * 1000 };
+const RESET_IP_LIMIT = { maxAttempts: 10, windowMs: 60 * 60 * 1000 };
+const RESET_EMAIL_LIMIT = { maxAttempts: 5, windowMs: 60 * 60 * 1000 };
 
 export default async function handler(req, res) {
   const pathname = url.parse(req.url).pathname;
@@ -78,8 +91,19 @@ async function handleLogin(req, res) {
       });
     }
 
+    const clientIp = getClientIp(req);
+    const rateLimited = await enforceRateLimits(req, res, [
+      { bucket: "login-ip", key: clientIp, options: LOGIN_IP_LIMIT },
+      { bucket: "login-email", key: email, options: LOGIN_EMAIL_LIMIT },
+    ]);
+    if (rateLimited) {
+      logSecurityEvent("login_rate_limited", { email, ip: clientIp });
+      return;
+    }
+
     const user = await users.findByEmail(email);
     if (!user) {
+      logSecurityEvent("login_failed", { email, ip: clientIp, reason: "no_such_account" });
       return res.status(401).json({
         success: false,
         error: { message: "Invalid email or password" },
@@ -88,13 +112,15 @@ async function handleLogin(req, res) {
 
     const passwordMatch = await comparePassword(password, user.password_hash);
     if (!passwordMatch) {
+      logSecurityEvent("login_failed", { email, ip: clientIp, userId: user.id, reason: "bad_password" });
       return res.status(401).json({
         success: false,
         error: { message: "Invalid email or password" },
       });
     }
 
-    const token = signToken(user.id, { rememberMe: rememberMe === true });
+    logSecurityEvent("login_success", { userId: user.id, email, ip: clientIp, rememberMe: rememberMe === true });
+    const token = signToken(user.id, { rememberMe: rememberMe === true, tokenVersion: user.token_version || 0 });
     res.setHeader("Set-Cookie", setCookieHeader(token, { rememberMe: rememberMe === true }));
 
     return res.status(200).json({
@@ -112,7 +138,7 @@ async function handleLogin(req, res) {
     console.error("Login error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Login failed" },
+      error: { message: "Login failed" },
     });
   }
 }
@@ -138,7 +164,7 @@ async function handleMe(req, res) {
   }
 
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
 
     const user = await users.findById(userId);
     if (!user) {
@@ -183,7 +209,7 @@ async function handleMe(req, res) {
     console.error("Get user error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to fetch user" },
+      error: { message: "Failed to fetch user" },
     });
   }
 }
@@ -210,6 +236,20 @@ async function handlePasswordResetRequest(req, res) {
       });
     }
 
+    // Rate-limited by IP and by the target email equally regardless of
+    // whether that email has an account, so a 429 here never itself becomes
+    // an account-existence signal (same reasoning as the generic success
+    // response below).
+    const clientIp = getClientIp(req);
+    const rateLimited = await enforceRateLimits(req, res, [
+      { bucket: "reset-ip", key: clientIp, options: RESET_IP_LIMIT },
+      { bucket: "reset-email", key: email, options: RESET_EMAIL_LIMIT },
+    ]);
+    if (rateLimited) {
+      logSecurityEvent("password_reset_request_rate_limited", { email, ip: clientIp });
+      return;
+    }
+
     const user = await users.findByEmail(email);
 
     let devResetUrl = null;
@@ -223,6 +263,9 @@ async function handlePasswordResetRequest(req, res) {
       const resetUrl = `${origin}/app?resetToken=${rawToken}`;
 
       await sendPasswordResetEmail({ to: user.email, resetUrl });
+      // Never log resetUrl/rawToken here - it's a live credential (see
+      // lib/email.js's own comment on the same point).
+      logSecurityEvent("password_reset_requested", { userId: user.id, email, ip: clientIp });
 
       // No email provider is wired up yet, so surface the link outside production
       // so the flow is testable. Remove once a real provider sends this link.
@@ -242,7 +285,7 @@ async function handlePasswordResetRequest(req, res) {
     console.error("Request password reset error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to request password reset" },
+      error: { message: "Failed to request password reset" },
     });
   }
 }
@@ -279,6 +322,7 @@ async function handlePasswordResetConsume(req, res) {
     const user = await users.findByResetTokenHash(tokenHash);
 
     if (!user || !user.reset_token_expires_at || new Date(user.reset_token_expires_at) < new Date()) {
+      logSecurityEvent("password_reset_consume_failed", { ip: getClientIp(req), reason: "invalid_or_expired_token" });
       return res.status(400).json({
         success: false,
         error: { message: "This reset link is invalid or has expired" },
@@ -286,10 +330,17 @@ async function handlePasswordResetConsume(req, res) {
     }
 
     const passwordHash = await hashPassword(password);
-    await users.resetPassword(user.id, passwordHash);
+    const updated = await users.resetPassword(user.id, passwordHash);
+    // Only helps this specific container's cache (see invalidateTokenVersionCache's
+    // own doc comment) - other warm containers still catch up within the
+    // short cache TTL, same as before.
+    invalidateTokenVersionCache(user.id);
+    logSecurityEvent("password_reset_completed", { userId: user.id, email: user.email, ip: getClientIp(req) });
 
-    // Sign the user in immediately so the reset flow ends in a working session
-    const sessionToken = signToken(user.id);
+    // Sign the user in immediately so the reset flow ends in a working
+    // session - using the post-bump token_version so this new token is
+    // itself valid (resetPassword just invalidated every earlier one).
+    const sessionToken = signToken(user.id, { tokenVersion: updated.token_version });
     res.setHeader("Set-Cookie", setCookieHeader(sessionToken));
 
     return res.status(200).json({
@@ -300,7 +351,7 @@ async function handlePasswordResetConsume(req, res) {
     console.error("Reset password error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to reset password" },
+      error: { message: "Failed to reset password" },
     });
   }
 }
@@ -311,7 +362,7 @@ async function handlePicture(req, res) {
   }
 
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const { imageBase64, mimeType } = req.body;
 
     if (!imageBase64) {
@@ -321,7 +372,10 @@ async function handlePicture(req, res) {
       });
     }
 
-    if (mimeType && !ALLOWED_PICTURE_MIME_TYPES.includes(mimeType)) {
+    // mimeType is required (not just checked when present) - an omitted
+    // value used to skip this check entirely and fall back to a trusted
+    // "image/jpeg" label regardless of what was actually uploaded.
+    if (!mimeType || !ALLOWED_PICTURE_MIME_TYPES.includes(mimeType)) {
       return res.status(422).json({
         success: false,
         error: { message: "Unsupported image type", fields: { mimeType: "Must be JPEG, PNG, WebP, or GIF" } },
@@ -344,9 +398,18 @@ async function handlePicture(req, res) {
       });
     }
 
+    // The mimeType field is client-supplied and not on its own trustworthy -
+    // confirm the actual bytes look like a real image before storing them.
+    if (!isValidImage(rawBuffer)) {
+      return res.status(422).json({
+        success: false,
+        error: { message: "File does not appear to be a valid image" },
+      });
+    }
+
     const saved = await users.savePicture(userId, {
       data: rawBuffer,
-      mimeType: mimeType || "image/jpeg",
+      mimeType,
     });
 
     return res.status(200).json({
@@ -364,7 +427,7 @@ async function handlePicture(req, res) {
     console.error("Upload picture error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to upload picture" },
+      error: { message: "Failed to upload picture" },
     });
   }
 }
@@ -375,7 +438,7 @@ async function handleProfile(req, res) {
   }
 
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const { name, nickname, onboardingCompleted } = req.body;
 
     if (onboardingCompleted === true) {
@@ -447,7 +510,7 @@ async function handleProfile(req, res) {
     console.error("Update profile error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to update profile" },
+      error: { message: "Failed to update profile" },
     });
   }
 }
@@ -502,6 +565,11 @@ async function handleSignup(req, res) {
       });
     }
 
+    if (await enforceRateLimit(req, res, "signup-ip", getClientIp(req), SIGNUP_IP_LIMIT)) {
+      logSecurityEvent("signup_rate_limited", { email, ip: getClientIp(req) });
+      return;
+    }
+
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) {
       return res.status(422).json({
@@ -530,6 +598,7 @@ async function handleSignup(req, res) {
       timezone: typeof timezone === "string" && timezone.length <= 100 ? timezone : null,
       age,
     });
+    logSecurityEvent("signup_success", { userId: user.id, email, ip: getClientIp(req) });
 
     const token = signToken(user.id);
     res.setHeader("Set-Cookie", setCookieHeader(token));
@@ -552,7 +621,7 @@ async function handleSignup(req, res) {
     console.error("Signup error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Signup failed" },
+      error: { message: "Signup failed" },
     });
   }
 }

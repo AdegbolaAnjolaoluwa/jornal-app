@@ -1,0 +1,111 @@
+name: Security checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      # Fails the build on any moderate-or-higher advisory affecting a
+      # resolved package. Run `npm audit fix` locally to resolve, or
+      # `npm audit` for details on what's failing here.
+      - run: npm audit --audit-level=moderate
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # Scans the full history on push to main, and just the PR's new
+      # commits on pull_request, for anything that looks like a committed
+      # credential (API keys, private keys, tokens, etc).
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      # These are the DB-independent security/unit tests (JWT, password
+      # policy, UUID validation, upload magic-byte checks, rate-limit IP
+      # extraction) - see lib/*.test.js. Full integration tests against a
+      # live database run in the integration-test job below, against a
+      # disposable Neon branch.
+      - run: npm test
+        env:
+          JWT_SECRET: ci-placeholder-secret-not-used-in-production-0123456789
+          DATABASE_URL: postgresql://ci:ci@localhost/ci_placeholder_not_connected
+          GROQ_API_KEY: ci-placeholder-not-used-in-production
+
+  integration-test:
+    name: Integration tests (disposable DB)
+    runs-on: ubuntu-latest
+    # Requires a NEON_API_KEY repo secret (Neon console -> Account -> API
+    # keys) and a NEON_PROJECT_ID repo variable. Without these, this job is
+    # skipped rather than failing the whole workflow - it's additive
+    # coverage, not yet a hard gate.
+    if: ${{ vars.NEON_PROJECT_ID != '' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+
+      # Creates a full, isolated copy-on-write branch of the production
+      # schema/data for this run only, and deletes it automatically when the
+      # workflow finishes (success or failure) - see the "delete" step below.
+      - name: Create Neon branch
+        id: neon-branch
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch_name: ci-${{ github.run_id }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Apply schema
+        run: node scripts/ci-init-schema.mjs
+        env:
+          # @vercel/postgres's sql client reads POSTGRES_URL specifically,
+          # not DATABASE_URL - confirmed against node_modules/@vercel/postgres.
+          POSTGRES_URL: ${{ steps.neon-branch.outputs.db_url }}
+
+      # No integration test suite exists yet (see the "remaining risks"
+      # section of the security audit) - this step is a placeholder that
+      # confirms the schema applies cleanly against a real database. Add
+      # `api/**/*.integration.test.js` files exercising real auth/rate-limit/
+      # upload flows against POSTGRES_URL, then add an `npm run
+      # test:integration` script and call it here instead.
+      - name: Verify schema applied
+        run: node scripts/ci-verify-schema.mjs
+        env:
+          POSTGRES_URL: ${{ steps.neon-branch.outputs.db_url }}
+
+      - name: Delete Neon branch
+        if: always()
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: ci-${{ github.run_id }}
+          api_key: ${{ secrets.NEON_API_KEY }}

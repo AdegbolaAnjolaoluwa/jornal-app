@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const actionPoints = await apTable.findByUserId(userId);
 
     return res.status(200).json({
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     console.error("Get action points error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to fetch action points" },
+      error: { message: "Failed to fetch action points" },
     });
   }
 }

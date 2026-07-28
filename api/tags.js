@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const { prefix } = url.parse(req.url, true).query;
 
     const results = prefix ? await tagsTable.findByPrefix(userId, prefix) : await tagsTable.findByUserId(userId);
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     console.error("Get tags error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to fetch tags" },
+      error: { message: "Failed to fetch tags" },
     });
   }
 }

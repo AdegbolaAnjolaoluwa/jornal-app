@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const facts = await userFacts.findByUserId(userId);
 
     return res.status(200).json({
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     console.error("Get facts error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to fetch facts" },
+      error: { message: "Failed to fetch facts" },
     });
   }
 }

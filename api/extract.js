@@ -7,6 +7,15 @@
 import { entries, actionPoints as apTable, userFacts } from "../lib/db.js";
 import { requireAuth } from "../lib/auth.js";
 import { extractInsights, validateExtraction } from "../lib/ai.js";
+import { enforceRateLimit } from "../lib/rateLimit.js";
+import { isValidUuid } from "../lib/validation.js";
+import { logSecurityEvent } from "../lib/securityLog.js";
+
+// Bounds how much a single request can cost in AI tokens/time - both the
+// abuse case (a script hammering this endpoint) and the accident case (a
+// pasted document instead of a journal entry).
+const MAX_USER_INPUT_LENGTH = 8000;
+const EXTRACT_RATE_LIMIT = { maxAttempts: 30, windowMs: 15 * 60 * 1000 };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -14,11 +23,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
+
+    // Keyed by userId, not IP - every caller here is already authenticated,
+    // and the thing being bounded is per-account AI spend, not anonymous abuse.
+    if (await enforceRateLimit(req, res, "extract-user", userId, EXTRACT_RATE_LIMIT)) {
+      logSecurityEvent("extract_rate_limited", { userId });
+      return;
+    }
+
     const { entryId, userInput, clearIncompleteActionPoints } = req.body;
 
     // Validate input
-    if (!userInput) {
+    if (!userInput || typeof userInput !== "string") {
       return res.status(422).json({
         success: false,
         error: {
@@ -28,8 +45,24 @@ export default async function handler(req, res) {
       });
     }
 
+    if (userInput.length > MAX_USER_INPUT_LENGTH) {
+      return res.status(422).json({
+        success: false,
+        error: {
+          message: "Entry text is too long",
+          fields: { userInput: `Must be ${MAX_USER_INPUT_LENGTH} characters or fewer` },
+        },
+      });
+    }
+
     // If entryId provided, verify ownership
     if (entryId) {
+      if (!isValidUuid(entryId)) {
+        return res.status(404).json({
+          success: false,
+          error: { message: "Entry not found" },
+        });
+      }
       const entry = await entries.findById(entryId, userId);
       if (!entry) {
         return res.status(404).json({
@@ -107,7 +140,7 @@ export default async function handler(req, res) {
     console.error("Extract error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Extraction failed" },
+      error: { message: "Extraction failed" },
     });
   }
 }

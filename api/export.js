@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
 
     const userEntries = await entries.findAllForExport(userId);
     const entryIds = userEntries.map((e) => e.id);
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     console.error("Export error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to export entries" },
+      error: { message: "Failed to export entries" },
     });
   }
 }

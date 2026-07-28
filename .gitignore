@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
-package-lock.json
+# package-lock.json is intentionally committed (not ignored) - it pins the
+# exact dependency tree so every install (local, CI, Vercel) resolves the
+# same versions, and gives `npm ci`/lockfile-integrity checks something to
+# verify against.
 yarn.lock
 
 # Environment

@@ -19,15 +19,45 @@ import zlib from "zlib";
 import { entries, actionPoints as apTable, entryMessages, tags as tagsTable } from "../lib/db.js";
 import { requireAuth } from "../lib/auth.js";
 import { continueConversation } from "../lib/ai.js";
+import { isValidAudio } from "../lib/fileSignature.js";
+import { enforceRateLimit } from "../lib/rateLimit.js";
+import { isValidUuid } from "../lib/validation.js";
 import url from "url";
 
 // Base64 adds ~33% overhead, so the raw-audio ceiling is lower than the
 // underlying ~4.5MB Vercel body limit that constrains the base64 string itself.
 const MAX_AUDIO_UPLOAD_BYTES = 3.2 * 1024 * 1024;
+const MAX_CHAT_MESSAGE_LENGTH = 4000;
+const CHAT_MESSAGE_RATE_LIMIT = { maxAttempts: 30, windowMs: 15 * 60 * 1000 };
+// Matches /api/extract.js's own MAX_USER_INPUT_LENGTH - an entry's text is
+// exactly what gets sent there for AI extraction, so the two caps must agree
+// or a valid-at-creation entry could fail every future extraction attempt.
+const MAX_ENTRY_TEXT_LENGTH = 8000;
+const ALLOWED_AUDIO_MIME_TYPES = [
+  "audio/webm",
+  "audio/mp4",
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/wav",
+  "audio/x-wav",
+  "audio/ogg",
+];
+const MAX_TAG_LENGTH = 50;
+const MAX_TAGS_PER_ENTRY = 20;
+
+// Shared by both tag-setting call sites: dedupes, trims, drops empties,
+// caps individual tag length (tags are short labels, not free text), and
+// caps how many can be attached to one entry.
+function cleanTagNames(tagNames) {
+  return [...new Set(tagNames.map((t) => String(t).trim().slice(0, MAX_TAG_LENGTH)).filter(Boolean))].slice(
+    0,
+    MAX_TAGS_PER_ENTRY
+  );
+}
 
 export default async function handler(req, res) {
   try {
-    const userId = requireAuth(req);
+    const userId = await requireAuth(req);
     const parsedUrl = url.parse(req.url, true);
     const pathname = parsedUrl.pathname;
     const pathParts = pathname.split("/").filter((p) => p);
@@ -41,6 +71,18 @@ export default async function handler(req, res) {
 
     if (pathParts[2] === "trash" && req.method === "GET") {
       return handleGetTrashedEntries(userId, res);
+    }
+
+    // Every branch below this point treats entryId as a real entry id (the
+    // "archived"/"trash" literal-path cases were already handled above), so
+    // validate it once here rather than in every individual handler - an
+    // obviously-malformed id is rejected as a clean 404 instead of reaching
+    // Postgres and surfacing a raw "invalid input syntax for type uuid" error.
+    if (entryId && !isValidUuid(entryId)) {
+      return res.status(404).json({ success: false, error: { message: "Entry not found" } });
+    }
+    if (apId && !isValidUuid(apId)) {
+      return res.status(404).json({ success: false, error: { message: "Action point not found" } });
     }
 
     if (subResource === "messages" && entryId) {
@@ -122,7 +164,7 @@ export default async function handler(req, res) {
     console.error("Entries handler error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to process request" },
+      error: { message: "Failed to process request" },
     });
   }
 }
@@ -182,7 +224,7 @@ async function handleGetEntries(userId, req, res) {
     console.error("Get entries error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to fetch entries" },
+      error: { message: "Failed to fetch entries" },
     });
   }
 }
@@ -201,7 +243,7 @@ async function handleGetArchivedEntries(userId, res) {
     console.error("Get archived entries error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to fetch archived entries" },
+      error: { message: "Failed to fetch archived entries" },
     });
   }
 }
@@ -220,7 +262,7 @@ async function handleGetTrashedEntries(userId, res) {
     console.error("Get trashed entries error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to fetch trashed entries" },
+      error: { message: "Failed to fetch trashed entries" },
     });
   }
 }
@@ -229,7 +271,7 @@ async function handleCreateEntry(userId, req, res) {
   try {
     const { inputType, inputText } = req.body;
 
-    if (!inputType || !inputText) {
+    if (!inputType || !inputText || typeof inputText !== "string") {
       return res.status(422).json({
         success: false,
         error: {
@@ -252,11 +294,21 @@ async function handleCreateEntry(userId, req, res) {
       });
     }
 
+    if (inputText.length > MAX_ENTRY_TEXT_LENGTH) {
+      return res.status(422).json({
+        success: false,
+        error: {
+          message: "Entry text is too long",
+          fields: { inputText: `Must be ${MAX_ENTRY_TEXT_LENGTH} characters or fewer` },
+        },
+      });
+    }
+
     const entry = await entries.create(userId, inputType, inputText);
 
     const { tags: tagNames } = req.body;
     if (Array.isArray(tagNames) && tagNames.length > 0) {
-      const cleaned = [...new Set(tagNames.map((t) => String(t).trim()).filter(Boolean))].slice(0, 20);
+      const cleaned = cleanTagNames(tagNames);
       entry.tags = cleaned.length > 0 ? await tagsTable.setForEntry(entry.id, userId, cleaned) : [];
     } else {
       entry.tags = [];
@@ -270,7 +322,7 @@ async function handleCreateEntry(userId, req, res) {
     console.error("Create entry error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to create entry" },
+      error: { message: "Failed to create entry" },
     });
   }
 }
@@ -290,6 +342,12 @@ async function handleUpdateEntry(entryId, userId, req, res) {
 
     let trimmedInputText;
     if (inputText !== undefined) {
+      if (typeof inputText !== "string") {
+        return res.status(422).json({
+          success: false,
+          error: { message: "inputText must be a string", fields: { inputText: "Invalid entry text" } },
+        });
+      }
       trimmedInputText = inputText.trim();
       if (!trimmedInputText) {
         return res.status(422).json({
@@ -297,6 +355,15 @@ async function handleUpdateEntry(entryId, userId, req, res) {
           error: {
             message: "inputText cannot be empty",
             fields: { inputText: "Entry text cannot be empty" },
+          },
+        });
+      }
+      if (trimmedInputText.length > MAX_ENTRY_TEXT_LENGTH) {
+        return res.status(422).json({
+          success: false,
+          error: {
+            message: "Entry text is too long",
+            fields: { inputText: `Must be ${MAX_ENTRY_TEXT_LENGTH} characters or fewer` },
           },
         });
       }
@@ -316,7 +383,7 @@ async function handleUpdateEntry(entryId, userId, req, res) {
     console.error("Update entry error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to update entry" },
+      error: { message: "Failed to update entry" },
     });
   }
 }
@@ -329,6 +396,16 @@ async function handleUploadAudio(entryId, userId, req, res) {
       return res.status(422).json({
         success: false,
         error: { message: "No audio data received" },
+      });
+    }
+
+    // mimeType is required (consistent with the picture upload endpoint) so
+    // a client can't silently fall back to a mislabeled default - the actual
+    // bytes are still independently verified below via isValidAudio().
+    if (!mimeType || !ALLOWED_AUDIO_MIME_TYPES.includes(mimeType)) {
+      return res.status(422).json({
+        success: false,
+        error: { message: "Unsupported audio type", fields: { mimeType: "Must be a supported audio format" } },
       });
     }
 
@@ -356,11 +433,20 @@ async function handleUploadAudio(entryId, userId, req, res) {
       });
     }
 
+    // mimeType is client-supplied and not on its own trustworthy - confirm
+    // the actual bytes look like a real audio format before storing them.
+    if (!isValidAudio(rawBuffer)) {
+      return res.status(422).json({
+        success: false,
+        error: { message: "File does not appear to be a valid audio recording" },
+      });
+    }
+
     const compressed = zlib.gzipSync(rawBuffer);
 
     const saved = await entries.saveAudio(entryId, userId, {
       audioData: compressed,
-      mimeType: mimeType || "audio/webm",
+      mimeType,
       originalBytes: rawBuffer.length,
       compressedBytes: compressed.length,
     });
@@ -377,7 +463,7 @@ async function handleUploadAudio(entryId, userId, req, res) {
     console.error("Upload audio error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to upload audio" },
+      error: { message: "Failed to upload audio" },
     });
   }
 }
@@ -405,7 +491,7 @@ async function handleGetAudio(entryId, userId, res) {
     console.error("Get audio error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to fetch audio" },
+      error: { message: "Failed to fetch audio" },
     });
   }
 }
@@ -439,7 +525,7 @@ async function handleArchiveEntry(entryId, userId, req, res) {
     console.error("Archive entry error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to update archive state" },
+      error: { message: "Failed to update archive state" },
     });
   }
 }
@@ -473,7 +559,7 @@ async function handleTrashEntry(entryId, userId, req, res) {
     console.error("Trash entry error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to update trash state" },
+      error: { message: "Failed to update trash state" },
     });
   }
 }
@@ -497,7 +583,7 @@ async function handleUpdateEntryTags(entryId, userId, req, res) {
       });
     }
 
-    const cleaned = [...new Set(tagNames.map((t) => String(t).trim()).filter(Boolean))].slice(0, 20);
+    const cleaned = cleanTagNames(tagNames);
     const updatedTags = await tagsTable.setForEntry(entryId, userId, cleaned);
 
     return res.status(200).json({
@@ -508,7 +594,7 @@ async function handleUpdateEntryTags(entryId, userId, req, res) {
     console.error("Update entry tags error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to update tags" },
+      error: { message: "Failed to update tags" },
     });
   }
 }
@@ -545,7 +631,7 @@ async function handleUpdateActionPoint(entryId, apId, userId, req, res) {
     console.error("Update action point error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to update action point" },
+      error: { message: "Failed to update action point" },
     });
   }
 }
@@ -576,7 +662,7 @@ async function handleDeleteActionPoint(entryId, apId, userId, res) {
     console.error("Delete action point error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to delete action point" },
+      error: { message: "Failed to delete action point" },
     });
   }
 }
@@ -602,7 +688,7 @@ async function handleDeleteEntry(entryId, userId, res) {
     console.error("Delete entry error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to delete entry" },
+      error: { message: "Failed to delete entry" },
     });
   }
 }
@@ -627,21 +713,33 @@ async function handleGetMessages(entryId, userId, res) {
     console.error("Get messages error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to fetch messages" },
+      error: { message: "Failed to fetch messages" },
     });
   }
 }
 
 async function handlePostMessage(entryId, userId, req, res) {
   try {
+    if (await enforceRateLimit(req, res, "chat-message-user", userId, CHAT_MESSAGE_RATE_LIMIT)) return;
+
     const { content } = req.body;
 
-    if (!content || !content.trim()) {
+    if (!content || typeof content !== "string" || !content.trim()) {
       return res.status(422).json({
         success: false,
         error: {
           message: "content is required",
           fields: { content: "Message cannot be empty" },
+        },
+      });
+    }
+
+    if (content.length > MAX_CHAT_MESSAGE_LENGTH) {
+      return res.status(422).json({
+        success: false,
+        error: {
+          message: "Message is too long",
+          fields: { content: `Must be ${MAX_CHAT_MESSAGE_LENGTH} characters or fewer` },
         },
       });
     }
@@ -678,7 +776,7 @@ async function handlePostMessage(entryId, userId, req, res) {
     console.error("Post message error:", err);
     return res.status(500).json({
       success: false,
-      error: { message: err.message || "Failed to send message" },
+      error: { message: "Failed to send message" },
     });
   }
 }
