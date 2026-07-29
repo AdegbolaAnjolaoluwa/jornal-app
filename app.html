@@ -1171,6 +1171,105 @@
         border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
       }
 
+      .recap-period-toggle {
+        display: inline-flex;
+        gap: 4px;
+        background: var(--sidebar-bg);
+        border-radius: 999px;
+        padding: 4px;
+        margin-bottom: 20px;
+      }
+
+      .recap-period-btn {
+        font-family: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--ink-soft);
+        background: none;
+        border: none;
+        border-radius: 999px;
+        padding: 7px 16px;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+      }
+
+      .recap-period-btn:hover {
+        color: var(--ink);
+      }
+
+      .recap-period-btn.active {
+        background: var(--surface);
+        color: var(--ink);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .recap-card {
+        background: var(--surface);
+        border-radius: 18px;
+        box-shadow: var(--shadow-md);
+        padding: 26px 28px;
+      }
+
+      .recap-stats-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      .recap-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        background: var(--sidebar-bg);
+        border-radius: 12px;
+        padding: 10px 16px;
+        min-width: 84px;
+      }
+
+      .recap-stat-value {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--ink);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .recap-stat-label {
+        font-size: 11.5px;
+        color: var(--ink-faint);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+
+      .recap-tags-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 18px;
+      }
+
+      .recap-tag-chip {
+        font-size: 12px;
+        color: var(--ink-soft);
+        background: var(--sidebar-bg);
+        border-radius: 999px;
+        padding: 3px 10px;
+      }
+
+      .recap-summary {
+        font-size: 15px;
+        line-height: 1.65;
+        color: var(--ink);
+      }
+
+      .recap-loading {
+        color: var(--ink-faint);
+        font-size: 14px;
+        font-style: italic;
+        padding: 30px 0;
+        text-align: center;
+      }
+
       .conversation-back-btn {
         display: inline-flex;
         align-items: center;
@@ -3139,6 +3238,9 @@
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>To-do List</span></span>
               <span class="sidebar-link-badge" id="todoOpenCountBadge" style="display: none"></span>
             </a>
+            <a href="#" class="sidebar-link" data-view="recapView" title="Recap">
+              <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Recap</span></span>
+            </a>
           </nav>
 
           <div class="sidebar-bottom-cluster">
@@ -3269,6 +3371,15 @@
               <div id="todoList"></div>
             </div>
 
+            <!-- Recap View -->
+            <div class="view" id="recapView">
+              <div class="recap-period-toggle">
+                <button type="button" class="recap-period-btn active" data-period="week">This Week</button>
+                <button type="button" class="recap-period-btn" data-period="month">This Month</button>
+              </div>
+              <div id="recapContent"></div>
+            </div>
+
             <!-- Settings View -->
             <div class="view" id="settingsView">
               <div class="settings-card">
@@ -3338,6 +3449,7 @@
             tags: "/api/tags",
             export: "/api/export",
             streak: "/api/streak",
+            recap: "/api/recap",
           },
         },
         voice: {
@@ -3360,6 +3472,7 @@
         todoActionPoints: [],
         streak: null,
         streakNudgeShown: false,
+        recapPeriod: "week",
         isTemporaryMode: false,
         conversationReturnView: "homeView",
         sidebarCollapsed: (typeof localStorage !== "undefined" && localStorage.getItem("sayso_sidebar_collapsed") === "1") || false,
@@ -4316,6 +4429,73 @@
             `;
           })
           .join("");
+      }
+
+      // ===== Recap =====
+      async function loadRecap() {
+        const content = document.getElementById("recapContent");
+        if (content) content.innerHTML = '<div class="recap-loading">Building your recap…</div>';
+
+        document.querySelectorAll(".recap-period-btn").forEach((btn) => {
+          btn.classList.toggle("active", btn.dataset.period === state.recapPeriod);
+        });
+
+        try {
+          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const params = new URLSearchParams({ periodType: state.recapPeriod, timezone, today: localDateString() });
+          const response = await authFetch(`${CONFIG.api.endpoints.recap}?${params}`);
+          if (!response.ok) throw new Error("Failed to load recap");
+          const data = await response.json();
+          renderRecap(data.data);
+        } catch (error) {
+          if (!(error instanceof SessionExpiredError)) {
+            if (content) {
+              content.innerHTML = `<div class="empty-state"><h3>Couldn't load recap</h3><p>${escapeHtml(error.message)}</p></div>`;
+            }
+          }
+        }
+      }
+
+      function renderRecap(recap) {
+        const content = document.getElementById("recapContent");
+        if (!content) return;
+
+        if (recap.stats.entryCount === 0) {
+          const periodWord = recap.periodType === "week" ? "week" : "month";
+          content.innerHTML = `<div class="empty-state"><h3>Nothing yet</h3><p>Write a few entries this ${periodWord} and your recap will show up here.</p></div>`;
+          return;
+        }
+
+        const tagsHtml = recap.stats.topTags.length
+          ? `<div class="recap-tags-row">${recap.stats.topTags.map((t) => `<span class="recap-tag-chip">${escapeHtml(t)}</span>`).join("")}</div>`
+          : "";
+
+        content.innerHTML = `
+          <div class="recap-card">
+            <div class="recap-stats-row">
+              <div class="recap-stat">
+                <span class="recap-stat-value">${recap.stats.entryCount}</span>
+                <span class="recap-stat-label">${recap.stats.entryCount === 1 ? "Entry" : "Entries"}</span>
+              </div>
+              <div class="recap-stat">
+                <span class="recap-stat-value">${recap.stats.completedCount}</span>
+                <span class="recap-stat-label">Completed</span>
+              </div>
+            </div>
+            ${tagsHtml}
+            <div class="recap-summary">${escapeHtml(recap.summary || "")}</div>
+          </div>
+        `;
+      }
+
+      function bindRecapPeriodToggle() {
+        document.querySelectorAll(".recap-period-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            if (btn.dataset.period === state.recapPeriod) return;
+            state.recapPeriod = btn.dataset.period;
+            loadRecap();
+          });
+        });
       }
 
       // ===== To-do List =====
@@ -5899,12 +6079,14 @@
 
       const VIEW_HEADINGS = {
         todoView: "To-do List",
+        recapView: "Recap",
         settingsView: "Settings",
       };
 
       const VIEW_LOADERS = {
         homeView: loadEntries,
         todoView: loadTodoList,
+        recapView: loadRecap,
         settingsView: loadSettings,
       };
 
@@ -6200,6 +6382,9 @@
 
         // Composer tag input
         bindComposerTagInput();
+
+        // Recap period toggle (Week/Month) - static markup, bound once
+        bindRecapPeriodToggle();
 
         // Form actions (plain-text path)
         document.getElementById("submitBtn").addEventListener("click", () => submitEntry());
