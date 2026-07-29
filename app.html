@@ -4421,7 +4421,18 @@
             </div>
           </div>
         `;
-        bindActionPointHandlers(container);
+        bindActionPointHandlers(container, {
+          // Update the source array with the saved row (completed,
+          // completed_at, etc.) and re-render, so checking a task off moves
+          // it into the Completed column immediately instead of just
+          // leaving a strikethrough in the Due column until the next full
+          // reload.
+          onToggled: (apId, updatedAp) => {
+            const index = state.todoActionPoints.findIndex((ap) => ap.id === apId);
+            if (index !== -1) state.todoActionPoints[index] = { ...state.todoActionPoints[index], ...updatedAp };
+            renderTodoList();
+          },
+        });
       }
 
       // ===== Archive =====
@@ -4814,7 +4825,13 @@
         return response.json();
       }
 
-      function bindActionPointHandlers(root) {
+      // onToggled(apId, updatedActionPoint), if given, fires after a
+      // completion toggle successfully saves - used by the to-do list to
+      // move the item into the Completed column immediately instead of just
+      // leaving a strikethrough in place (the right behavior for the
+      // detail/card views, where items don't belong to a completed/due
+      // grouping in the first place).
+      function bindActionPointHandlers(root, { onToggled } = {}) {
         root.querySelectorAll(".action-point:not(.action-point--readonly)").forEach((point) => {
           point.addEventListener("click", async (e) => {
             if (e.target.closest(".action-point-remind") || e.target.closest(".action-point-remind-picker")) return;
@@ -4827,7 +4844,8 @@
 
             point.classList.toggle("completed");
             try {
-              await updateActionPoint(entryId, apId, { completed: !wasCompleted });
+              const updated = await updateActionPoint(entryId, apId, { completed: !wasCompleted });
+              onToggled?.(apId, updated.data.actionPoint);
             } catch (err) {
               point.classList.toggle("completed");
               if (!(err instanceof SessionExpiredError)) {

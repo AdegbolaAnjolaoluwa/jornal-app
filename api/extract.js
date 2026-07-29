@@ -77,14 +77,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Re-extraction after an entry's text was edited: clear stale incomplete
-    // action points from the old text before adding fresh ones below, but
-    // never on ordinary creation (this flag is never sent there), and never
-    // touch already-completed action points - those are real finished work.
-    if (entryId && clearIncompleteActionPoints) {
-      await apTable.deleteIncompleteByEntryId(entryId, userId);
-    }
-
     // If entryId provided, fetch this user's known facts to inject as context
     let priorFacts = [];
     if (entryId) {
@@ -118,9 +110,43 @@ export default async function handler(req, res) {
         clarifyingQuestion: extraction.clarifyingQuestion,
       });
 
-      createdActionPoints = await Promise.all(
-        extraction.actionPoints.map((ap) => apTable.create(entryId, userId, ap.text, ap.dueDate))
-      );
+      if (clearIncompleteActionPoints) {
+        // Re-extraction after an edit: match the freshly extracted action
+        // points against existing incomplete ones by exact text instead of
+        // blanket delete-and-recreate. A task whose wording is unchanged
+        // (the common case - most edits touch other parts of the entry)
+        // keeps its row untouched, so it doesn't visually "jump" to a new
+        // position in the Due column or lose a due date/reminder someone
+        // had already set on it. Only genuinely new or reworded action
+        // points create new rows; only ones no longer present get deleted.
+        // Completed action points are never touched here - they're real
+        // finished work regardless of what the edited text says now.
+        const existing = await apTable.findByEntryId(entryId, userId);
+        const existingIncomplete = existing.filter((ap) => !ap.completed);
+        const stillIncompleteTexts = new Set();
+
+        createdActionPoints = [];
+        for (const ap of extraction.actionPoints) {
+          const match = existingIncomplete.find(
+            (e) => !stillIncompleteTexts.has(e.id) && e.text === ap.text
+          );
+          if (match) {
+            stillIncompleteTexts.add(match.id);
+            createdActionPoints.push(match);
+          } else {
+            createdActionPoints.push(await apTable.create(entryId, userId, ap.text, ap.dueDate));
+          }
+        }
+
+        const staleIds = existingIncomplete.filter((e) => !stillIncompleteTexts.has(e.id)).map((e) => e.id);
+        if (staleIds.length > 0) {
+          await Promise.all(staleIds.map((id) => apTable.delete(id, userId)));
+        }
+      } else {
+        createdActionPoints = await Promise.all(
+          extraction.actionPoints.map((ap) => apTable.create(entryId, userId, ap.text, ap.dueDate))
+        );
+      }
 
       createdFacts = await Promise.all(
         extraction.memorableFacts.map((text) => userFacts.create(userId, text, entryId))
