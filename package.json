@@ -5,9 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bash scripts/dev.sh",
     "build": "node scripts/build-sw.mjs",
-    "test": "node --test"
+    "test": "node --test",
+    "start:local": "bash scripts/dev.sh"
   },
   "dependencies": {
     "@vercel/postgres": "^0.10.0",
