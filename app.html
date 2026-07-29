@@ -1150,6 +1150,27 @@
         color: var(--ink-soft);
       }
 
+      .home-date-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .streak-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: color-mix(in srgb, var(--gold) 16%, transparent);
+        color: var(--gold-dark);
+        border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+      }
+
       .conversation-back-btn {
         display: inline-flex;
         align-items: center;
@@ -2633,6 +2654,12 @@
         border-color: var(--error-tint-border);
       }
 
+      .toast-warning {
+        background: color-mix(in srgb, var(--gold) 16%, transparent);
+        color: var(--gold-dark);
+        border-color: color-mix(in srgb, var(--gold) 40%, transparent);
+      }
+
       /* ===== Responsive ===== */
       @media (max-width: 860px) {
         /* Sidebar becomes an off-canvas drawer, opened via the hamburger button */
@@ -3113,7 +3140,10 @@
               <div class="home-content">
                 <div class="home-welcome">
                   <div class="home-greeting" id="homeGreeting"></div>
-                  <div class="home-date" id="homeDate"></div>
+                  <div class="home-date-row">
+                    <div class="home-date" id="homeDate"></div>
+                    <div class="streak-badge" id="streakBadge" style="display: none"></div>
+                  </div>
                 </div>
 
                 <!-- Entry Composer -->
@@ -3283,6 +3313,7 @@
             actionPoints: "/api/action-points",
             tags: "/api/tags",
             export: "/api/export",
+            streak: "/api/streak",
           },
         },
         voice: {
@@ -3303,6 +3334,8 @@
         currentInputType: "text",
         facts: [],
         todoActionPoints: [],
+        streak: null,
+        streakNudgeShown: false,
         isTemporaryMode: false,
         conversationReturnView: "homeView",
         sidebarCollapsed: (typeof localStorage !== "undefined" && localStorage.getItem("sayso_sidebar_collapsed") === "1") || false,
@@ -4000,6 +4033,11 @@
           const createData = await createResponse.json();
           const entryId = createData.data.entry.id;
 
+          // Fire-and-forget: today's entry may have just started (or
+          // extended) the streak, so refresh the badge without waiting on
+          // it - it's not on the critical path for the entry itself.
+          loadStreak();
+
           if (audioBlobToUpload) {
             try {
               const audioBase64 = await blobToBase64(audioBlobToUpload);
@@ -4683,6 +4721,53 @@
       function localDateString(date = new Date()) {
         const pad = (n) => String(n).padStart(2, "0");
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+      }
+
+      // ===== Streak =====
+      async function loadStreak() {
+        try {
+          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const params = new URLSearchParams({ timezone, today: localDateString() });
+          const response = await authFetch(`${CONFIG.api.endpoints.streak}?${params}`);
+          if (!response.ok) throw new Error("Failed to load streak");
+          const data = await response.json();
+          state.streak = data.data;
+          renderStreakBadge();
+          maybeShowStreakNudge();
+        } catch (error) {
+          // Streak is a nice-to-have, not core functionality - fail silently
+          // (no toast) rather than interrupting the home view over it, same
+          // as any other non-critical background fetch.
+          if (!(error instanceof SessionExpiredError)) {
+            console.error("Failed to load streak:", error);
+          }
+        }
+      }
+
+      function renderStreakBadge() {
+        const badge = document.getElementById("streakBadge");
+        if (!badge || !state.streak) return;
+        if (state.streak.current <= 0) {
+          badge.style.display = "none";
+          return;
+        }
+        const day = state.streak.current === 1 ? "day" : "days";
+        badge.textContent = `🔥 ${state.streak.current} ${day} streak`;
+        badge.style.display = "";
+      }
+
+      // Nudges once per page load (not once per home-view visit, which could
+      // otherwise fire repeatedly as someone navigates back and forth) - only
+      // in the evening, only if there's an active streak that would actually
+      // be lost, and only if nothing's been written yet today.
+      function maybeShowStreakNudge() {
+        if (state.streakNudgeShown || !state.streak) return;
+        if (state.streak.wroteToday || state.streak.current <= 0) return;
+        if (new Date().getHours() < 20) return;
+
+        state.streakNudgeShown = true;
+        const day = state.streak.current === 1 ? "day" : "days";
+        showToast(`Don't lose your ${state.streak.current}-${day} streak — write something today`, "warning");
       }
 
       async function updateActionPoint(entryId, apId, fields) {
@@ -5813,6 +5898,12 @@
             day: "numeric",
           });
         }
+        if (state.streak) {
+          // Already have a value from earlier this session - show it
+          // immediately rather than a flash of "no badge" while re-fetching.
+          renderStreakBadge();
+        }
+        loadStreak();
       }
 
       function switchAuthTab(tabType) {

@@ -32,7 +32,7 @@ Return JSON with five keys:
 
 - title: a short label for this entry, like a chat app's conversation title (3-6 words, no ending punctuation, no quotes). Summarize the main topic or event, not a generic phrase like "Journal entry". Title Case is not required, write it the way a person would say it in passing.
 - actionPoints: array of objects, one per concrete task implied by the entry. Each object has "text" (a short imperative phrase, "Email Tayo about the invoice") and "dueDate" (a "YYYY-MM-DD" string if the entry states or implies a deadline for that specific task - "by tomorrow", "due Friday", "before next week" - resolved against the "Today's date" given below, otherwise null). Empty array if nothing implies a task, never invent one. Never invent a due date that wasn't stated or clearly implied either.
-- reflection: one short plain sentence acknowledging what was said, or null if it would add nothing beyond restating the entry.
+- reflection: one short plain sentence acknowledging what was said, or null if it would add nothing beyond restating the entry. If a "Known facts about this user" message is present and this entry genuinely continues one of those threads (same person, project, or goal), the reflection may briefly acknowledge that continuity - but only when it's actually true of this entry, never as a forced callback.
 - clarifyingQuestion: one short specific question, only if the entry implies a task but doesn't say what it is, or could mean two different things. Otherwise null. Ask about the single biggest ambiguity, never more than one question.
 - memorableFacts: array of short standalone statements capturing durable facts about the person worth remembering in future entries: recurring people (names, roles, relationships), ongoing projects, stated goals, or clear preferences. Do NOT include one-off transient details (moods, single-day events, times, dates, anything true only today). Only include a fact if it would still be useful to know weeks from now. Empty array if nothing meets this bar, most entries will have none.
 
@@ -46,6 +46,9 @@ Example, entry: "need to follow up with the vendor about that thing"
 
 Example, entry: "spent the afternoon debugging the payments migration with Priya again, she's been a huge help this sprint"
 {"title": "Debugging the payments migration", "actionPoints": [], "reflection": "Good to have a strong collaborator on something this gnarly.", "clarifyingQuestion": null, "memorableFacts": ["Works with a colleague named Priya", "Working on a payments migration project"]}
+
+Example, entry: "pairing with Priya again today, finally got the migration passing in staging" (known facts include "Works with a colleague named Priya" and "Working on a payments migration project")
+{"title": "Migration passing in staging", "actionPoints": [], "reflection": "Good progress, nice that you and Priya keep tackling this together.", "clarifyingQuestion": null, "memorableFacts": []}
 
 Example, entry: "need to email Tayo the invoice by tomorrow, and I should probably review that PR sometime too" (assume today is 2026-07-24)
 {"title": "Invoice email and PR review", "actionPoints": [{"text": "Email Tayo the invoice", "dueDate": "2026-07-25"}, {"text": "Review the PR", "dueDate": null}], "reflection": null, "clarifyingQuestion": null, "memorableFacts": []}
