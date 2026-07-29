@@ -2197,6 +2197,30 @@
         white-space: nowrap;
       }
 
+      .reminder-suggestion {
+        font-family: inherit;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--gold-dark);
+        background: color-mix(in srgb, var(--gold) 12%, transparent);
+        border: 1px dashed color-mix(in srgb, var(--gold) 45%, transparent);
+        border-radius: 999px;
+        padding: 2px 9px;
+        flex-shrink: 0;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background 0.15s, opacity 0.15s;
+      }
+
+      .reminder-suggestion:hover {
+        background: color-mix(in srgb, var(--gold) 22%, transparent);
+      }
+
+      .reminder-suggestion:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
       .fact-row {
         display: flex;
         justify-content: space-between;
@@ -4326,6 +4350,7 @@
             <div class="action-point-text">${escapeHtml(ap.text)}</div>
             ${dueDateLabelHtml(ap.due_date, ap.completed)}
             ${reminderLabelHtml(ap.remind_at)}
+            ${reminderSuggestionHtml(ap)}
             <button type="button" class="action-point-remind${ap.remind_at ? " has-reminder" : ""}" data-id="${ap.id}" data-remind-at="${ap.remind_at || ""}" title="${ap.remind_at ? "Reminder set" : "Set reminder"}">&#128276;</button>
             <div class="todo-item-source">${escapeHtml(truncate(ap.entry_input_text, 60))}</div>
           </div>
@@ -4687,6 +4712,18 @@
         return `<span class="action-point-reminder-label" title="Reminder set">&#128276; ${dateStr}, ${timeStr}</span>`;
       }
 
+      // A one-click prompt shown only when the AI already detected a due
+      // date but no reminder has been set yet - the common case is "yes,
+      // remind me", so clicking sets a sensible default (9am on the due
+      // date) immediately rather than forcing the full picker open first.
+      // Never shown for a completed task (nothing left to be reminded about)
+      // or once a reminder already exists (reminderLabelHtml covers that).
+      function reminderSuggestionHtml(ap) {
+        if (!ap.due_date || ap.remind_at || ap.completed) return "";
+        const dateStr = typeof ap.due_date === "string" ? ap.due_date.slice(0, 10) : localDateString(new Date(ap.due_date));
+        return `<button type="button" class="reminder-suggestion" data-id="${ap.id}" data-due-date="${dateStr}" title="Set a reminder for this">&#128276; Remind me?</button>`;
+      }
+
       function actionPointsHtml(actionPoints) {
         if (!actionPoints || actionPoints.length === 0) return "";
         return `
@@ -4699,6 +4736,8 @@
                 <div class="action-point-box"></div>
                 <div class="action-point-text">${escapeHtml(ap.text)}</div>
                 ${dueDateLabelHtml(ap.due_date, ap.completed)}
+                ${reminderLabelHtml(ap.remind_at)}
+                ${reminderSuggestionHtml(ap)}
                 <button type="button" class="action-point-remind${ap.remind_at ? " has-reminder" : ""}" data-id="${ap.id}" data-remind-at="${ap.remind_at || ""}" title="${ap.remind_at ? "Reminder set" : "Set reminder"}">&#128276;</button>
               </div>
             `
@@ -4792,7 +4831,13 @@
       function bindActionPointHandlers(root, { onToggled } = {}) {
         root.querySelectorAll(".action-point:not(.action-point--readonly)").forEach((point) => {
           point.addEventListener("click", async (e) => {
-            if (e.target.closest(".action-point-remind") || e.target.closest(".action-point-remind-picker")) return;
+            if (
+              e.target.closest(".action-point-remind") ||
+              e.target.closest(".action-point-remind-picker") ||
+              e.target.closest(".reminder-suggestion")
+            ) {
+              return;
+            }
             e.stopPropagation();
 
             const entryCard = point.closest("[data-entry-id]");
@@ -4817,6 +4862,42 @@
           btn.addEventListener("click", (e) => {
             e.stopPropagation();
             openReminderPicker(btn);
+          });
+        });
+
+        root.querySelectorAll(".reminder-suggestion").forEach((btn) => {
+          btn.addEventListener("click", async (e) => {
+            e.stopPropagation();
+            const point = btn.closest("[data-id]");
+            const entryCard = btn.closest("[data-entry-id]");
+            const entryId = entryCard?.dataset.entryId;
+            const apId = btn.dataset.id;
+            // 9am local on the due date - a reasonable default for "remind
+            // me about this," editable afterward via the bell icon's picker
+            // like any other reminder if 9am isn't right for this one.
+            const remindAt = new Date(`${btn.dataset.dueDate}T09:00:00`).toISOString();
+
+            btn.disabled = true;
+            try {
+              const updated = await updateActionPoint(entryId, apId, { remindAt });
+              const remindBtn = point?.querySelector(".action-point-remind");
+              if (remindBtn) {
+                remindBtn.dataset.remindAt = remindAt;
+                remindBtn.classList.add("has-reminder");
+                remindBtn.title = "Reminder set";
+              }
+              const label = document.createElement("span");
+              label.className = "action-point-reminder-label";
+              label.title = "Reminder set";
+              const d = new Date(remindAt);
+              label.textContent = `🔔 ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}, ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+              btn.replaceWith(label);
+            } catch (err) {
+              btn.disabled = false;
+              if (!(err instanceof SessionExpiredError)) {
+                showAlert(`Failed to set reminder: ${err.message}`, "error");
+              }
+            }
           });
         });
       }
