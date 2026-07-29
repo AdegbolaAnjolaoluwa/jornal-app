@@ -915,6 +915,11 @@
         background: var(--surface);
       }
 
+      .sidebar-history-item.pending-delete {
+        background: var(--error-tint);
+        transition: background 0.15s;
+      }
+
       .sidebar-history-item-text {
         font-size: 12.5px;
         color: var(--ink);
@@ -4693,6 +4698,120 @@
             openEntryDetail(item.dataset.entryId, { returnView: "homeView" });
             closeSidebarDrawer();
           });
+        });
+        bindSidebarHistoryDelete(container);
+      }
+
+      // Permanently deletes an entry and everything tied to it (reminders,
+      // action points, chat thread, memorable facts - all cascade at the DB
+      // level from a single DELETE), same "Delete Forever" semantics as the
+      // Trash view's danger button, just reachable directly from the
+      // sidebar via long-press/right-click instead of via Trash first.
+      async function deleteEntryPermanently(entryId) {
+        if (!confirm("Permanently delete this entry? This also deletes its reminders, action points, and any facts learned from it. This cannot be undone.")) {
+          return;
+        }
+        try {
+          const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}`, { method: "DELETE" });
+          if (!response.ok) throw new Error("Request failed");
+
+          state.entries = state.entries.filter((e) => e.id !== entryId);
+          state.trashedEntries = state.trashedEntries.filter((e) => e.id !== entryId);
+          state.archivedEntries = state.archivedEntries.filter((e) => e.id !== entryId);
+          renderEntries();
+          renderTrashList();
+          renderArchiveList();
+
+          // If the deleted entry's detail happens to be open, sending the
+          // user home is less jarring than leaving a detail view pointed at
+          // an id that no longer exists.
+          if (document.querySelector(`#conversationDetail[data-entry-id="${entryId}"]`)) {
+            showView("homeView");
+          }
+
+          showAlert("Entry deleted", "success");
+        } catch (error) {
+          if (!(error instanceof SessionExpiredError)) {
+            showAlert(`Failed to delete entry: ${error.message}`, "error");
+          }
+        }
+      }
+
+      // Right-click (desktop) or long-press (~500ms, mobile/touch) on a
+      // sidebar history item deletes it, after confirmation. Long-press is
+      // cancelled if the finger moves more than a few pixels (a scroll, not
+      // a press-and-hold) or lifts early, so it doesn't fight normal list
+      // scrolling or a quick tap-to-open.
+      function bindSidebarHistoryDelete(container) {
+        const LONG_PRESS_MS = 500;
+        const MOVE_CANCEL_PX = 10;
+
+        container.querySelectorAll(".sidebar-history-item").forEach((item) => {
+          item.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            deleteEntryPermanently(item.dataset.entryId);
+          });
+
+          let pressTimer = null;
+          let startX = 0;
+          let startY = 0;
+          let longPressFired = false;
+
+          const clearPress = () => {
+            if (pressTimer) clearTimeout(pressTimer);
+            pressTimer = null;
+            item.classList.remove("pending-delete");
+          };
+
+          item.addEventListener(
+            "touchstart",
+            (e) => {
+              const touch = e.touches[0];
+              startX = touch.clientX;
+              startY = touch.clientY;
+              longPressFired = false;
+              clearPress();
+              item.classList.add("pending-delete");
+              pressTimer = setTimeout(() => {
+                longPressFired = true;
+                item.classList.remove("pending-delete");
+                if (navigator.vibrate) navigator.vibrate(15);
+                deleteEntryPermanently(item.dataset.entryId);
+              }, LONG_PRESS_MS);
+            },
+            { passive: true }
+          );
+
+          item.addEventListener(
+            "touchmove",
+            (e) => {
+              const touch = e.touches[0];
+              if (
+                Math.abs(touch.clientX - startX) > MOVE_CANCEL_PX ||
+                Math.abs(touch.clientY - startY) > MOVE_CANCEL_PX
+              ) {
+                clearPress();
+              }
+            },
+            { passive: true }
+          );
+
+          item.addEventListener("touchend", clearPress);
+          item.addEventListener("touchcancel", clearPress);
+
+          // A long-press that fired the delete confirmation shouldn't also
+          // register as the tap-to-open click that follows the touch sequence.
+          item.addEventListener(
+            "click",
+            (e) => {
+              if (longPressFired) {
+                e.stopPropagation();
+                e.preventDefault();
+                longPressFired = false;
+              }
+            },
+            true
+          );
         });
       }
 
