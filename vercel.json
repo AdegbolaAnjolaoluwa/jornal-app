@@ -1,7 +1,7 @@
 {
   "framework": null,
   "buildCommand": null,
-  "installCommand": "npm install",
+  "installCommand": "npm install && npm run build",
   "rewrites": [
     { "source": "/", "destination": "/landing.html" },
     { "source": "/app", "destination": "/app.html" },
