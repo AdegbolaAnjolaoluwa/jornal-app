@@ -2166,22 +2166,66 @@
         text-decoration: line-through;
       }
 
+      .todo-columns {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 28px;
+        align-items: start;
+      }
+
+      @media (max-width: 720px) {
+        .todo-columns {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+      }
+
+      .todo-column-header {
+        font-size: 12.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--ink-faint);
+        padding-bottom: 10px;
+        margin-bottom: 4px;
+        border-bottom: 1px solid var(--border-input);
+      }
+
+      .todo-column-empty {
+        font-size: 13px;
+        color: var(--ink-faint);
+        font-style: italic;
+        padding: 16px 0;
+      }
+
       .todo-item {
         align-items: center;
+        flex-wrap: wrap;
+        row-gap: 4px;
       }
 
       .todo-item .action-point-text {
-        flex: 1;
+        flex: 1 1 auto;
+        min-width: 120px;
       }
 
       .todo-item-source {
         font-size: 12px;
         color: var(--ink-faint);
         flex-shrink: 0;
-        max-width: 220px;
+        max-width: 100%;
+        width: 100%;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        padding-left: 30px;
+      }
+
+      .action-point-reminder-label {
+        font-size: 11.5px;
+        color: var(--ink-faint);
+        flex-shrink: 0;
+        white-space: nowrap;
       }
 
       .fact-row {
@@ -4304,24 +4348,79 @@
         }
       }
 
+      // Sort key for the Due column: overdue first (oldest overdue first),
+      // then today, then soonest upcoming, then no-due-date items last
+      // (grouped at the end rather than mixed in, since "no date" isn't
+      // orderable against real dates).
+      function dueSortValue(dueDate) {
+        if (!dueDate) return Infinity;
+        const dateStr = typeof dueDate === "string" ? dueDate.slice(0, 10) : localDateString(new Date(dueDate));
+        return new Date(`${dateStr}T00:00:00`).getTime();
+      }
+
+      function todoItemHtml(ap) {
+        return `
+          <div class="action-point todo-item${ap.completed ? " completed" : ""}" data-id="${ap.id}" data-entry-id="${ap.entry_id}">
+            <div class="action-point-box"></div>
+            <div class="action-point-text">${escapeHtml(ap.text)}</div>
+            ${dueDateLabelHtml(ap.due_date, ap.completed)}
+            ${reminderLabelHtml(ap.remind_at)}
+            <button type="button" class="action-point-remind${ap.remind_at ? " has-reminder" : ""}" data-id="${ap.id}" data-remind-at="${ap.remind_at || ""}" title="${ap.remind_at ? "Reminder set" : "Set reminder"}">&#128276;</button>
+            <div class="todo-item-source">${escapeHtml(truncate(ap.entry_input_text, 60))}</div>
+          </div>
+        `;
+      }
+
       function renderTodoList() {
         const container = document.getElementById("todoList");
         if (state.todoActionPoints.length === 0) {
           container.innerHTML = '<div class="empty-state"><h3>Nothing to do</h3><p>Action points from your entries will show up here.</p></div>';
           return;
         }
-        container.innerHTML = state.todoActionPoints
-          .map(
-            (ap) => `
-              <div class="action-point todo-item${ap.completed ? " completed" : ""}" data-id="${ap.id}" data-entry-id="${ap.entry_id}">
-                <div class="action-point-box"></div>
-                <div class="action-point-text">${escapeHtml(ap.text)}</div>
-                ${dueDateLabelHtml(ap.due_date, ap.completed)}
-                <div class="todo-item-source">${escapeHtml(truncate(ap.entry_input_text, 60))}</div>
-              </div>
-            `
-          )
-          .join("");
+
+        const now = new Date();
+        const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+
+        const due = [];
+        const completed = [];
+        for (const ap of state.todoActionPoints) {
+          if (!ap.completed) {
+            due.push(ap);
+            continue;
+          }
+          // Completed column resets monthly: only show items completed in
+          // the current calendar month (local time). Older completions
+          // aren't deleted, just no longer listed here - they're still on
+          // their original entry.
+          if (!ap.completed_at) continue;
+          const completedDate = new Date(ap.completed_at);
+          if (Number.isNaN(completedDate.getTime())) continue;
+          const completedMonthKey = `${completedDate.getFullYear()}-${completedDate.getMonth()}`;
+          if (completedMonthKey === currentMonthKey) completed.push(ap);
+        }
+
+        due.sort((a, b) => dueSortValue(a.due_date) - dueSortValue(b.due_date));
+        completed.sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime());
+
+        const dueColumnBody = due.length
+          ? due.map(todoItemHtml).join("")
+          : '<div class="todo-column-empty">Nothing due right now.</div>';
+        const completedColumnBody = completed.length
+          ? completed.map(todoItemHtml).join("")
+          : '<div class="todo-column-empty">Nothing completed this month yet.</div>';
+
+        container.innerHTML = `
+          <div class="todo-columns">
+            <div class="todo-column">
+              <div class="todo-column-header">Due &middot; ${due.length}</div>
+              <div class="todo-column-body">${dueColumnBody}</div>
+            </div>
+            <div class="todo-column">
+              <div class="todo-column-header">Completed &middot; ${completed.length}</div>
+              <div class="todo-column-body">${completedColumnBody}</div>
+            </div>
+          </div>
+        `;
         bindActionPointHandlers(container);
       }
 
@@ -4652,6 +4751,18 @@
         if (completed && variant === "overdue") variant = "";
 
         return `<span class="action-point-due${variant ? ` action-point-due--${variant}` : ""}">${text}</span>`;
+      }
+
+      // Renders a compact "when" label for an existing reminder (set via the
+      // bell icon), e.g. "Jul 20, 9:00 AM" - the bell button itself only
+      // shows set/not-set via color, this surfaces the actual time.
+      function reminderLabelHtml(remindAt) {
+        if (!remindAt) return "";
+        const date = new Date(remindAt);
+        if (Number.isNaN(date.getTime())) return "";
+        const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+        return `<span class="action-point-reminder-label" title="Reminder set">&#128276; ${dateStr}, ${timeStr}</span>`;
       }
 
       function actionPointsHtml(actionPoints) {
