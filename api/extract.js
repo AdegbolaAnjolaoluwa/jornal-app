@@ -8,7 +8,7 @@ import { entries, actionPoints as apTable, userFacts } from "../lib/db.js";
 import { requireAuth } from "../lib/auth.js";
 import { extractInsights, validateExtraction } from "../lib/ai.js";
 import { enforceRateLimit } from "../lib/rateLimit.js";
-import { isValidUuid } from "../lib/validation.js";
+import { isValidUuid, isValidIsoDate } from "../lib/validation.js";
 import { logSecurityEvent } from "../lib/securityLog.js";
 
 // Bounds how much a single request can cost in AI tokens/time - both the
@@ -32,7 +32,12 @@ export default async function handler(req, res) {
       return;
     }
 
-    const { entryId, userInput, clearIncompleteActionPoints } = req.body;
+    const { entryId, userInput, clearIncompleteActionPoints, today: rawToday } = req.body;
+
+    // Client-supplied "today" (the user's own local date) is used to resolve
+    // relative due-date phrases like "tomorrow" - falls back to server UTC
+    // date if missing or malformed, same default extractInsights() itself uses.
+    const today = isValidIsoDate(rawToday) ? rawToday : undefined;
 
     // Validate input
     if (!userInput || typeof userInput !== "string") {
@@ -88,7 +93,7 @@ export default async function handler(req, res) {
     }
 
     // Extract insights from user input
-    const extraction = await extractInsights(userInput, priorFacts);
+    const extraction = await extractInsights(userInput, priorFacts, today);
 
     // Validate extraction format
     const validation = validateExtraction(extraction);
@@ -114,7 +119,7 @@ export default async function handler(req, res) {
       });
 
       createdActionPoints = await Promise.all(
-        extraction.actionPoints.map((text) => apTable.create(entryId, userId, text))
+        extraction.actionPoints.map((ap) => apTable.create(entryId, userId, ap.text, ap.dueDate))
       );
 
       createdFacts = await Promise.all(

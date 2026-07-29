@@ -1973,10 +1973,98 @@
       }
 
       .temp-extracting {
-        font-size: 13px;
-        color: var(--ink-faint);
-        font-style: italic;
         margin-top: 8px;
+      }
+
+      /* "Thinking" placeholder shown while AI extraction is in flight -
+         a pulsing-dots line plus shimmering skeleton bars standing in for
+         the reflection/action points about to arrive. */
+      .extraction-thinking {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 4px 0 8px;
+      }
+
+      .thinking-dots {
+        display: inline-flex;
+        gap: 4px;
+        align-items: center;
+      }
+
+      .thinking-dots span {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--gold);
+        opacity: 0.35;
+        animation: thinking-pulse 1.2s ease-in-out infinite;
+      }
+
+      .thinking-dots span:nth-child(2) { animation-delay: 0.15s; }
+      .thinking-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+      @keyframes thinking-pulse {
+        0%, 80%, 100% { opacity: 0.25; transform: scale(0.85); }
+        40% { opacity: 1; transform: scale(1); }
+      }
+
+      .skeleton-bar {
+        height: 12px;
+        border-radius: 6px;
+        background: linear-gradient(
+          90deg,
+          var(--border-input) 25%,
+          color-mix(in srgb, var(--border-input) 40%, var(--surface)) 50%,
+          var(--border-input) 75%
+        );
+        background-size: 200% 100%;
+        animation: skeleton-shimmer 1.6s ease-in-out infinite;
+      }
+
+      .skeleton-bar--short { width: 40%; }
+      .skeleton-bar--medium { width: 65%; }
+      .skeleton-bar--full { width: 90%; }
+
+      @keyframes skeleton-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .thinking-dots span,
+        .skeleton-bar {
+          animation: none;
+        }
+        .thinking-dots span {
+          opacity: 0.7;
+        }
+      }
+
+      .action-point-due {
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        padding: 2px 8px;
+        border-radius: 999px;
+        flex-shrink: 0;
+        white-space: nowrap;
+        align-self: center;
+        background: var(--surface);
+        color: var(--ink-faint);
+        border: 1px solid var(--border-input);
+      }
+
+      .action-point-due--today {
+        background: color-mix(in srgb, var(--gold) 16%, transparent);
+        color: var(--gold-dark);
+        border-color: color-mix(in srgb, var(--gold) 40%, transparent);
+      }
+
+      .action-point-due--overdue {
+        background: var(--error-tint);
+        color: var(--error);
+        border-color: var(--error-tint-border);
       }
 
       .action-point-remind {
@@ -2066,6 +2154,8 @@
       }
 
       .action-point-text {
+        flex: 1;
+        min-width: 0;
         font-size: 14.5px;
         line-height: 1.5;
         color: var(--ink);
@@ -3893,12 +3983,13 @@
           closeRecordingPreview();
           clearForm();
           openEntryDetail(tempEntry.id);
+          showAlert("Temporary entry added (won't be saved)", "success");
 
           try {
             const extractResponse = await authFetch(CONFIG.api.endpoints.extract, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userInput: inputText }),
+              body: JSON.stringify({ userInput: inputText, today: localDateString() }),
             });
             if (!extractResponse.ok) throw new Error("Failed to extract insights");
             const extractData = await extractResponse.json();
@@ -3915,9 +4006,16 @@
           } finally {
             tempEntry.isExtracting = false;
             renderEntries();
+            // The detail view is a separate DOM tree from the card list
+            // renderEntries() updates above - if the user is still looking
+            // at this entry's detail (the common case, since it was just
+            // opened), re-render it too so the thinking placeholder is
+            // replaced with the real reflection/action points instead of
+            // being stuck showing "thinking" indefinitely.
+            if (document.querySelector(`#conversationDetail[data-entry-id="${tempEntry.id}"]`)) {
+              openEntryDetail(tempEntry.id);
+            }
           }
-
-          showAlert("Temporary entry added (won't be saved)", "success");
           return;
         }
 
@@ -3951,21 +4049,41 @@
             }
           }
 
-          showAlert("Extracting insights...", "info");
-
-          const extractResponse = await authFetch(CONFIG.api.endpoints.extract, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ entryId, userInput: inputText }),
-          });
-
-          if (!extractResponse.ok) throw new Error("Failed to extract insights");
-
-          showAlert("Entry created and processed successfully", "success");
           closeRecordingPreview();
           clearForm();
+
+          // Open the entry right away, with a placeholder standing in for
+          // the reflection/action points while extraction runs in the
+          // background - avoids a "Extracting insights…" toast (or two)
+          // ahead of the entry appearing, and reads more like a live
+          // response filling in than a loading state you wait through.
           await loadEntries();
+          const entry = state.entries.find((e) => e.id === entryId);
+          if (entry) entry.isExtracting = true;
           openEntryDetail(entryId);
+
+          try {
+            const extractResponse = await authFetch(CONFIG.api.endpoints.extract, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ entryId, userInput: inputText, today: localDateString() }),
+            });
+
+            if (!extractResponse.ok) throw new Error("Failed to extract insights");
+            await loadEntries();
+          } catch (extractError) {
+            if (!(extractError instanceof SessionExpiredError)) {
+              showAlert(`Couldn't get AI insights: ${extractError.message}`, "error");
+            }
+            const failedEntry = state.entries.find((e) => e.id === entryId);
+            if (failedEntry) failedEntry.isExtracting = false;
+          } finally {
+            if (document.querySelector(`#conversationDetail[data-entry-id="${entryId}"]`)) {
+              openEntryDetail(entryId);
+            } else {
+              renderEntries();
+            }
+          }
         } catch (error) {
           if (!(error instanceof SessionExpiredError)) {
             if (isOfflineError(error)) {
@@ -4198,6 +4316,7 @@
               <div class="action-point todo-item${ap.completed ? " completed" : ""}" data-id="${ap.id}" data-entry-id="${ap.entry_id}">
                 <div class="action-point-box"></div>
                 <div class="action-point-text">${escapeHtml(ap.text)}</div>
+                ${dueDateLabelHtml(ap.due_date, ap.completed)}
                 <div class="todo-item-source">${escapeHtml(truncate(ap.entry_input_text, 60))}</div>
               </div>
             `
@@ -4495,6 +4614,46 @@
         return `<span class="entry-badge ${isVoice ? "voice" : "text"}">${icon}${isVoice ? "Voice" : "Text"}</span>`;
       }
 
+      // Renders a due-date pill ("Due today", "Due tomorrow", "Due Mon",
+      // "Overdue") from an action point's due_date (a plain YYYY-MM-DD date,
+      // no time component - compared by calendar day, not by 24h windows,
+      // so "today" means the same day regardless of what time it currently is).
+      function dueDateLabelHtml(dueDate, completed) {
+        if (!dueDate) return "";
+
+        // Postgres DATE columns come back as either "YYYY-MM-DD" or a full
+        // Date already; normalize to just the date part either way.
+        const dateStr = typeof dueDate === "string" ? dueDate.slice(0, 10) : localDateString(new Date(dueDate));
+        const due = new Date(`${dateStr}T00:00:00`);
+        if (Number.isNaN(due.getTime())) return "";
+
+        const today = new Date(`${localDateString()}T00:00:00`);
+        const dayMs = 24 * 60 * 60 * 1000;
+        const diffDays = Math.round((due.getTime() - today.getTime()) / dayMs);
+
+        let text;
+        let variant = "";
+        if (diffDays === 0) {
+          text = "Due today";
+          variant = "today";
+        } else if (diffDays === 1) {
+          text = "Due tomorrow";
+        } else if (diffDays > 1 && diffDays < 7) {
+          text = `Due ${due.toLocaleDateString("en-US", { weekday: "short" })}`;
+        } else if (diffDays < 0) {
+          text = "Overdue";
+          variant = "overdue";
+        } else {
+          text = `Due ${due.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+        }
+
+        // A completed task's due date is no longer actionable information,
+        // so it never renders as "overdue" - just a neutral reference date.
+        if (completed && variant === "overdue") variant = "";
+
+        return `<span class="action-point-due${variant ? ` action-point-due--${variant}` : ""}">${text}</span>`;
+      }
+
       function actionPointsHtml(actionPoints) {
         if (!actionPoints || actionPoints.length === 0) return "";
         return `
@@ -4506,6 +4665,7 @@
               <div class="action-point${ap.completed ? " completed" : ""}" data-id="${ap.id}">
                 <div class="action-point-box"></div>
                 <div class="action-point-text">${escapeHtml(ap.text)}</div>
+                ${dueDateLabelHtml(ap.due_date, ap.completed)}
                 <button type="button" class="action-point-remind${ap.remind_at ? " has-reminder" : ""}" data-id="${ap.id}" data-remind-at="${ap.remind_at || ""}" title="${ap.remind_at ? "Reminder set" : "Set reminder"}">&#128276;</button>
               </div>
             `
@@ -4520,6 +4680,14 @@
         const date = new Date(isoString);
         const pad = (n) => String(n).padStart(2, "0");
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+      }
+
+      // Today's date in the browser's own timezone, as YYYY-MM-DD - sent
+      // alongside extraction requests so the AI resolves "tomorrow"/"Friday"
+      // against the user's actual local date, not the server's UTC date.
+      function localDateString(date = new Date()) {
+        const pad = (n) => String(n).padStart(2, "0");
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
       }
 
       async function updateActionPoint(entryId, apId, fields) {
@@ -4634,14 +4802,19 @@
           <div class="action-points">
             <div class="action-points-label">Action Points &middot; ${actionPoints.length}</div>
             ${actionPoints
-              .map(
-                (text) => `
+              .map((ap) => {
+                // extraction.actionPoints is [{text, dueDate}] objects, but
+                // tolerate a plain string too in case a caller predates that shape.
+                const text = typeof ap === "string" ? ap : ap.text;
+                const dueDate = typeof ap === "string" ? null : ap.dueDate;
+                return `
               <div class="action-point action-point--readonly">
                 <div class="action-point-box"></div>
                 <div class="action-point-text">${escapeHtml(text)}</div>
+                ${dueDateLabelHtml(dueDate, false)}
               </div>
-            `
-              )
+            `;
+              })
               .join("")}
           </div>
         `;
@@ -4653,6 +4826,20 @@
           <div class="reflection">
             <div class="reflection-label">Reflection</div>
             <p>${escapeHtml(reflection)}</p>
+          </div>
+        `;
+      }
+
+      // Stands in for the action points/reflection sections while extraction
+      // is running, in place of a toast - pulsing dots plus shimmering
+      // skeleton bars, filled in with the real content once it arrives.
+      function extractionThinkingHtml() {
+        return `
+          <div class="extraction-thinking">
+            <span class="thinking-dots"><span></span><span></span><span></span></span>
+            <div class="skeleton-bar skeleton-bar--medium"></div>
+            <div class="skeleton-bar skeleton-bar--full"></div>
+            <div class="skeleton-bar skeleton-bar--short"></div>
           </div>
         `;
       }
@@ -4728,7 +4915,9 @@
           : "";
 
         const temporaryBadgeHtml = entry.isTemporary ? '<span class="entry-badge temporary">Temporary</span>' : "";
-        const extractingHtml = entry.isExtracting ? '<div class="temp-extracting">Extracting insights…</div>' : "";
+        const extractingHtml = entry.isExtracting
+          ? '<div class="temp-extracting"><span class="thinking-dots"><span></span><span></span><span></span></span></div>'
+          : "";
         const actionPointsSection = entry.isTemporary
           ? tempActionPointsHtml(entry.temp_action_points)
           : actionPointsHtml(entry.action_points);
@@ -4984,7 +5173,12 @@
             const response = await authFetch(CONFIG.api.endpoints.extract, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ entryId, userInput: newText, clearIncompleteActionPoints: true }),
+              body: JSON.stringify({
+                entryId,
+                userInput: newText,
+                clearIncompleteActionPoints: true,
+                today: localDateString(),
+              }),
             });
             if (!response.ok) throw new Error("Failed to re-run extraction");
             // The extract response's actionPoints list is only the freshly
@@ -5042,8 +5236,14 @@
           </div>
           <div id="reExtractPromptRow"></div>
 
-          <div class="detail-section" id="detailActionPointsSection">${actionPointsHtml(entry.action_points)}</div>
-          <div class="detail-section" id="detailReflectionSection">${reflectionHtml(entry.reflection)}</div>
+          ${
+            entry.isExtracting
+              ? `<div class="detail-section">${extractionThinkingHtml()}</div>`
+              : `
+                <div class="detail-section" id="detailActionPointsSection">${actionPointsHtml(entry.action_points)}</div>
+                <div class="detail-section" id="detailReflectionSection">${reflectionHtml(entry.reflection)}</div>
+              `
+          }
           ${entry.isTemporary ? "" : detailTagEditorHtml(entry.tags || [])}
           <div class="detail-section">${chatThreadHtml(entry)}</div>
         `;

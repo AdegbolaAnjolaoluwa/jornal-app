@@ -21,7 +21,7 @@ import { requireAuth } from "../lib/auth.js";
 import { continueConversation } from "../lib/ai.js";
 import { isValidAudio } from "../lib/fileSignature.js";
 import { enforceRateLimit } from "../lib/rateLimit.js";
-import { isValidUuid } from "../lib/validation.js";
+import { isValidUuid, isValidIsoDate } from "../lib/validation.js";
 import url from "url";
 
 // Base64 adds ~33% overhead, so the raw-audio ceiling is lower than the
@@ -601,7 +601,14 @@ async function handleUpdateEntryTags(entryId, userId, req, res) {
 
 async function handleUpdateActionPoint(entryId, apId, userId, req, res) {
   try {
-    const { completed, remindAt } = req.body;
+    const { completed, remindAt, dueDate } = req.body;
+
+    if (dueDate !== undefined && dueDate !== null && !isValidIsoDate(dueDate)) {
+      return res.status(422).json({
+        success: false,
+        error: { message: "dueDate must be a valid YYYY-MM-DD date or null" },
+      });
+    }
 
     const entryPoints = await apTable.findByEntryId(entryId, userId);
     if (!entryPoints.some((ap) => ap.id === apId)) {
@@ -614,6 +621,7 @@ async function handleUpdateActionPoint(entryId, apId, userId, req, res) {
     const fields = {};
     if (completed !== undefined) fields.completed = completed;
     if (remindAt !== undefined) fields.remindAt = remindAt;
+    if (dueDate !== undefined) fields.dueDate = dueDate;
 
     const updated = await apTable.update(apId, userId, fields);
     if (!updated) {
