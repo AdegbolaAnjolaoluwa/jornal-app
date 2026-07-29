@@ -1,18 +1,14 @@
 /**
  * GET /api/entries - List entries for current user (each with its action points)
- * GET /api/entries/archived - List the current user's archived entries
- * GET /api/entries/trash - List the current user's trashed entries
  * POST /api/entries - Create a new entry
  * PATCH /api/entries/:id - Update an entry's text, reflection, or clarifying question
- * DELETE /api/entries/:id - Permanently delete an entry (used from Trash only)
+ * DELETE /api/entries/:id - Permanently delete an entry
  * GET /api/entries/:id/messages - List the clarifying-question chat thread for an entry
  * POST /api/entries/:id/messages - Post a user reply and get the AI's response
  * PATCH /api/entries/:id/action-points/:apId - Update an action point's completed/remindAt
  * DELETE /api/entries/:id/action-points/:apId - Delete an action point
  * POST /api/entries/:id/audio - Upload compressed voice-note audio for an entry (base64 JSON body)
  * GET /api/entries/:id/audio - Fetch an entry's compressed voice-note audio (base64 JSON body)
- * PATCH /api/entries/:id/archive - Archive or unarchive an entry
- * PATCH /api/entries/:id/trash - Move an entry to trash or restore it
  */
 
 import zlib from "zlib";
@@ -65,19 +61,10 @@ export default async function handler(req, res) {
     const subResource = pathParts[3]; // /api/entries/:id/:subResource
     const apId = pathParts[4]; // /api/entries/:id/action-points/:apId
 
-    if (pathParts[2] === "archived" && req.method === "GET") {
-      return handleGetArchivedEntries(userId, res);
-    }
-
-    if (pathParts[2] === "trash" && req.method === "GET") {
-      return handleGetTrashedEntries(userId, res);
-    }
-
-    // Every branch below this point treats entryId as a real entry id (the
-    // "archived"/"trash" literal-path cases were already handled above), so
-    // validate it once here rather than in every individual handler - an
-    // obviously-malformed id is rejected as a clean 404 instead of reaching
-    // Postgres and surfacing a raw "invalid input syntax for type uuid" error.
+    // Validate entryId/apId once here rather than in every individual
+    // handler - an obviously-malformed id is rejected as a clean 404 instead
+    // of reaching Postgres and surfacing a raw "invalid input syntax for
+    // type uuid" error.
     if (entryId && !isValidUuid(entryId)) {
       return res.status(404).json({ success: false, error: { message: "Entry not found" } });
     }
@@ -111,20 +98,6 @@ export default async function handler(req, res) {
       }
       if (req.method === "GET") {
         return handleGetAudio(entryId, userId, res);
-      }
-      return res.status(405).json({ error: "Method not allowed" });
-    }
-
-    if (subResource === "archive" && entryId) {
-      if (req.method === "PATCH") {
-        return handleArchiveEntry(entryId, userId, req, res);
-      }
-      return res.status(405).json({ error: "Method not allowed" });
-    }
-
-    if (subResource === "trash" && entryId) {
-      if (req.method === "PATCH") {
-        return handleTrashEntry(entryId, userId, req, res);
       }
       return res.status(405).json({ error: "Method not allowed" });
     }
@@ -225,44 +198,6 @@ async function handleGetEntries(userId, req, res) {
     return res.status(500).json({
       success: false,
       error: { message: "Failed to fetch entries" },
-    });
-  }
-}
-
-async function handleGetArchivedEntries(userId, res) {
-  try {
-    const userEntries = await entries.findArchivedByUserId(userId);
-    await attachActionPoints(userEntries, userId);
-    await attachTags(userEntries, userId);
-
-    return res.status(200).json({
-      success: true,
-      data: { entries: userEntries },
-    });
-  } catch (err) {
-    console.error("Get archived entries error:", err);
-    return res.status(500).json({
-      success: false,
-      error: { message: "Failed to fetch archived entries" },
-    });
-  }
-}
-
-async function handleGetTrashedEntries(userId, res) {
-  try {
-    const userEntries = await entries.findTrashedByUserId(userId);
-    await attachActionPoints(userEntries, userId);
-    await attachTags(userEntries, userId);
-
-    return res.status(200).json({
-      success: true,
-      data: { entries: userEntries },
-    });
-  } catch (err) {
-    console.error("Get trashed entries error:", err);
-    return res.status(500).json({
-      success: false,
-      error: { message: "Failed to fetch trashed entries" },
     });
   }
 }
@@ -492,74 +427,6 @@ async function handleGetAudio(entryId, userId, res) {
     return res.status(500).json({
       success: false,
       error: { message: "Failed to fetch audio" },
-    });
-  }
-}
-
-async function handleArchiveEntry(entryId, userId, req, res) {
-  try {
-    const { archived } = req.body;
-
-    if (typeof archived !== "boolean") {
-      return res.status(422).json({
-        success: false,
-        error: { message: "archived (boolean) is required" },
-      });
-    }
-
-    const entry = await entries.findById(entryId, userId);
-    if (!entry) {
-      return res.status(404).json({
-        success: false,
-        error: { message: "Entry not found" },
-      });
-    }
-
-    const updated = archived ? await entries.archive(entryId, userId) : await entries.unarchive(entryId, userId);
-
-    return res.status(200).json({
-      success: true,
-      data: { entry: updated },
-    });
-  } catch (err) {
-    console.error("Archive entry error:", err);
-    return res.status(500).json({
-      success: false,
-      error: { message: "Failed to update archive state" },
-    });
-  }
-}
-
-async function handleTrashEntry(entryId, userId, req, res) {
-  try {
-    const { deleted } = req.body;
-
-    if (typeof deleted !== "boolean") {
-      return res.status(422).json({
-        success: false,
-        error: { message: "deleted (boolean) is required" },
-      });
-    }
-
-    const entry = await entries.findById(entryId, userId);
-    if (!entry) {
-      return res.status(404).json({
-        success: false,
-        error: { message: "Entry not found" },
-      });
-    }
-
-    const updated = deleted ? await entries.softDelete(entryId, userId) : await entries.restore(entryId, userId);
-
-    return res.status(200).json({
-      success: true,
-      data: { entry: updated },
-    });
-  } catch (err) {
-    console.error("Trash entry error:", err);
-    return res.status(500).json({
-      success: false,
-      error: { message: "Failed to update trash state" },
     });
   }
 }

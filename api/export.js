@@ -1,9 +1,9 @@
 /**
  * GET /api/export
- * Dump all of the current user's entries (bypassing the normal 50-item cap;
- * excludes trashed entries) as downloadable JSON, including each entry's
- * action points and tags. Never includes raw audio bytes - a hasAudio boolean
- * is included instead so the export stays small and text-only.
+ * Dump all of the current user's entries (bypassing the normal 50-item cap)
+ * as downloadable JSON, including each entry's action points and tags. Never
+ * includes raw audio bytes - a hasAudio boolean is included instead so the
+ * export stays small and text-only.
  * Requires authentication
  */
 
@@ -44,7 +44,6 @@ export default async function handler(req, res) {
       reflection: e.reflection,
       clarifyingQuestion: e.clarifying_question,
       hasAudio: e.has_audio,
-      isArchived: e.is_archived,
       createdAt: e.created_at,
       updatedAt: e.updated_at,
       actionPoints: apByEntry.get(e.id) || [],

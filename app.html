@@ -1757,27 +1757,6 @@
         color: var(--ink-faint);
       }
 
-      .entry-card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-left: 3px solid transparent;
-        border-radius: 16px;
-        padding: 20px 22px;
-        margin-bottom: 14px;
-        box-shadow: var(--shadow-sm);
-        cursor: pointer;
-        transition: box-shadow 0.2s, transform 0.15s;
-      }
-
-      .entry-card:hover {
-        box-shadow: var(--shadow-md);
-        transform: translateY(-1px);
-      }
-
-      .entry-card.has-actions {
-        border-left-color: var(--gold);
-      }
-
       .skeleton-card {
         background: var(--surface);
         border: 1px solid var(--border);
@@ -1838,42 +1817,6 @@
       .entry-time {
         font-size: 12.5px;
         color: var(--ink-faint);
-      }
-
-      .entry-actions {
-        margin-left: auto;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .btn-archive-toggle,
-      .btn-trash-toggle {
-        background: transparent;
-        border: 1.5px solid var(--border-input);
-        border-radius: 8px;
-        padding: 5px 10px;
-        font-size: 12px;
-        font-family: inherit;
-        color: var(--ink-soft);
-        cursor: pointer;
-        transition: background 0.15s, color 0.15s;
-      }
-
-      .btn-archive-toggle:hover,
-      .btn-trash-toggle:hover {
-        background: var(--sidebar-bg);
-        color: var(--ink);
-      }
-
-      .btn-trash-toggle--danger {
-        border-color: var(--error);
-        color: var(--error);
-      }
-
-      .btn-trash-toggle--danger:hover {
-        background: var(--error);
-        color: #fff;
       }
 
       .entry-badge {
@@ -2788,10 +2731,6 @@
           padding: 20px;
         }
 
-        .entry-card {
-          padding: 16px 18px;
-        }
-
         .composer-controls {
           gap: 10px;
         }
@@ -3061,7 +3000,7 @@
           <div class="guide-card">
             <div class="guide-icon teal">&#128274;</div>
             <h2>Everything saved, privately</h2>
-            <p>Every entry lands in your own archive. Nothing is shared, nothing is public.</p>
+            <p>Every entry is saved to your account only. Nothing is shared, nothing is public.</p>
           </div>
         </div>
 
@@ -3148,12 +3087,6 @@
             <a href="#" class="sidebar-link" data-view="todoView" title="To-do List">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>To-do List</span></span>
               <span class="sidebar-link-badge" id="todoOpenCountBadge" style="display: none"></span>
-            </a>
-            <a href="#" class="sidebar-link" data-view="archiveView" title="Archive">
-              <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Archive</span></span>
-            </a>
-            <a href="#" class="sidebar-link" data-view="trashView" title="Trash">
-              <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Trash</span></span>
             </a>
           </nav>
 
@@ -3282,16 +3215,6 @@
               <div id="todoList"></div>
             </div>
 
-            <!-- Archive View -->
-            <div class="view" id="archiveView">
-              <div id="archiveList"></div>
-            </div>
-
-            <!-- Trash View -->
-            <div class="view" id="trashView">
-              <div id="trashList"></div>
-            </div>
-
             <!-- Settings View -->
             <div class="view" id="settingsView">
               <div class="settings-card">
@@ -3358,8 +3281,6 @@
             extract: "/api/extract",
             facts: "/api/facts",
             actionPoints: "/api/action-points",
-            archivedEntries: "/api/entries/archived",
-            trashedEntries: "/api/entries/trash",
             tags: "/api/tags",
             export: "/api/export",
           },
@@ -3382,8 +3303,6 @@
         currentInputType: "text",
         facts: [],
         todoActionPoints: [],
-        archivedEntries: [],
-        trashedEntries: [],
         isTemporaryMode: false,
         conversationReturnView: "homeView",
         sidebarCollapsed: (typeof localStorage !== "undefined" && localStorage.getItem("sayso_sidebar_collapsed") === "1") || false,
@@ -4019,7 +3938,6 @@
             reflection: null,
             clarifying_question: null,
             has_audio: false,
-            is_archived: false,
             action_points: [],
             tags: state.composerTags.map((name) => ({ id: name, name })),
             created_at: new Date().toISOString(),
@@ -4440,166 +4358,6 @@
         });
       }
 
-      // ===== Archive =====
-      async function loadArchivedEntries() {
-        try {
-          const response = await authFetch(CONFIG.api.endpoints.archivedEntries);
-          if (!response.ok) throw new Error("Failed to load archived entries");
-          const data = await response.json();
-          state.archivedEntries = data.data.entries;
-          renderArchiveList();
-        } catch (error) {
-          if (!(error instanceof SessionExpiredError)) {
-            showAlert(`Failed to load archive: ${error.message}`, "error");
-          }
-        }
-      }
-
-      function renderArchiveList() {
-        const container = document.getElementById("archiveList");
-        if (state.archivedEntries.length === 0) {
-          container.innerHTML = '<div class="empty-state"><h3>Archive is empty</h3><p>Entries you archive will show up here.</p></div>';
-          return;
-        }
-
-        const groups = groupEntriesByDate(state.archivedEntries);
-        container.innerHTML = groups
-          .map(
-            (group) => `
-          <div class="entry-date-group">
-            <span class="entry-date-label">${group.label}</span>
-          </div>
-          ${group.entries.map((entry) => renderEntryCard(entry, { archiveAction: "unarchive", trashAction: "trash" })).join("")}
-        `
-          )
-          .join("");
-
-        bindArchiveHandlers(container);
-        bindTrashHandlers(container);
-      }
-
-      // ===== Trash =====
-      async function loadTrashedEntries() {
-        try {
-          const response = await authFetch(CONFIG.api.endpoints.trashedEntries);
-          if (!response.ok) throw new Error("Failed to load trash");
-          const data = await response.json();
-          state.trashedEntries = data.data.entries;
-          renderTrashList();
-        } catch (error) {
-          if (!(error instanceof SessionExpiredError)) {
-            showAlert(`Failed to load trash: ${error.message}`, "error");
-          }
-        }
-      }
-
-      function renderTrashList() {
-        const container = document.getElementById("trashList");
-        if (state.trashedEntries.length === 0) {
-          container.innerHTML = '<div class="empty-state"><h3>Trash is empty</h3><p>Entries you delete will show up here.</p></div>';
-          return;
-        }
-
-        const groups = groupEntriesByDate(state.trashedEntries);
-        container.innerHTML = groups
-          .map(
-            (group) => `
-          <div class="entry-date-group">
-            <span class="entry-date-label">${group.label}</span>
-          </div>
-          ${group.entries.map((entry) => renderEntryCard(entry, { trashAction: "restore", deleteForeverAction: true })).join("")}
-        `
-          )
-          .join("");
-
-        bindTrashHandlers(container);
-      }
-
-      function bindArchiveHandlers(root) {
-        root.querySelectorAll(".btn-archive-toggle").forEach((btn) => {
-          btn.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            const entryId = btn.dataset.entryId;
-            const archived = btn.dataset.action === "archive";
-            try {
-              const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/archive`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ archived }),
-              });
-              if (!response.ok) throw new Error("Request failed");
-
-              if (archived) {
-                state.entries = state.entries.filter((e) => e.id !== entryId);
-                renderEntries();
-              } else {
-                state.archivedEntries = state.archivedEntries.filter((e) => e.id !== entryId);
-                renderArchiveList();
-                loadEntries();
-              }
-            } catch (error) {
-              if (!(error instanceof SessionExpiredError)) {
-                showAlert(`Failed to ${archived ? "archive" : "unarchive"} entry: ${error.message}`, "error");
-              }
-            }
-          });
-        });
-      }
-
-      function bindTrashHandlers(root) {
-        root.querySelectorAll(".btn-trash-toggle:not(.btn-trash-toggle--danger)").forEach((btn) => {
-          btn.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            const entryId = btn.dataset.entryId;
-            const deleted = btn.dataset.action === "trash";
-            try {
-              const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}/trash`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ deleted }),
-              });
-              if (!response.ok) throw new Error("Request failed");
-
-              if (deleted) {
-                state.entries = state.entries.filter((e) => e.id !== entryId);
-                state.archivedEntries = state.archivedEntries.filter((e) => e.id !== entryId);
-                renderEntries();
-                renderArchiveList();
-              } else {
-                state.trashedEntries = state.trashedEntries.filter((e) => e.id !== entryId);
-                renderTrashList();
-                loadEntries();
-              }
-            } catch (error) {
-              if (!(error instanceof SessionExpiredError)) {
-                showAlert(`Failed to ${deleted ? "move entry to trash" : "restore entry"}: ${error.message}`, "error");
-              }
-            }
-          });
-        });
-
-        root.querySelectorAll(".btn-trash-toggle--danger").forEach((btn) => {
-          btn.addEventListener("click", async (e) => {
-            e.stopPropagation();
-            const entryId = btn.dataset.entryId;
-            if (!confirm("Permanently delete this entry? This cannot be undone.")) return;
-            try {
-              const response = await authFetch(`${CONFIG.api.endpoints.entries}/${entryId}`, {
-                method: "DELETE",
-              });
-              if (!response.ok) throw new Error("Request failed");
-
-              state.trashedEntries = state.trashedEntries.filter((e) => e.id !== entryId);
-              renderTrashList();
-            } catch (error) {
-              if (!(error instanceof SessionExpiredError)) {
-                showAlert(`Failed to delete entry: ${error.message}`, "error");
-              }
-            }
-          });
-        });
-      }
-
       function groupEntriesByDate(entries) {
         const groups = [];
         let currentGroupKey = null;
@@ -4615,10 +4373,10 @@
         return groups;
       }
 
-      // Only the main All Entries feed gets semantic "Today"/"Yesterday"/
-      // "Last week" labels - Archive/Trash keep groupEntriesByDate's original
-      // literal weekday+date labels unchanged (those are historical/reference
-      // views where an absolute date reads better than a relative one).
+      // Converts groupEntriesByDate's literal weekday+date label into a
+      // relative one ("Today"/"Yesterday"/"Last week") for the sidebar
+      // history list, where a relative label reads more naturally at a
+      // glance than an absolute date.
       function toSemanticLabel(literalLabel, sampleDateIso) {
         const entryDate = new Date(sampleDateIso);
         const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -4704,9 +4462,9 @@
 
       // Permanently deletes an entry and everything tied to it (reminders,
       // action points, chat thread, memorable facts - all cascade at the DB
-      // level from a single DELETE), same "Delete Forever" semantics as the
-      // Trash view's danger button, just reachable directly from the
-      // sidebar via long-press/right-click instead of via Trash first.
+      // level from a single DELETE). This is the only removal path in the
+      // app - reachable via long-press (mobile) or right-click (desktop) on
+      // a sidebar history item.
       async function deleteEntryPermanently(entryId) {
         if (!confirm("Permanently delete this entry? This also deletes its reminders, action points, and any facts learned from it. This cannot be undone.")) {
           return;
@@ -4716,11 +4474,7 @@
           if (!response.ok) throw new Error("Request failed");
 
           state.entries = state.entries.filter((e) => e.id !== entryId);
-          state.trashedEntries = state.trashedEntries.filter((e) => e.id !== entryId);
-          state.archivedEntries = state.archivedEntries.filter((e) => e.id !== entryId);
           renderEntries();
-          renderTrashList();
-          renderArchiveList();
 
           // If the deleted entry's detail happens to be open, sending the
           // user home is less jarring than leaving a detail view pointed at
@@ -5133,57 +4887,6 @@
               <input type="text" id="chatInput" placeholder="Reply..." autocomplete="off" />
               <button type="submit" class="chat-send-btn">Send</button>
             </form>
-          </div>
-        `;
-      }
-
-      function renderEntryCard(entry, opts = {}) {
-        const date = new Date(entry.created_at);
-        const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-        const hasActions = entry.action_points && entry.action_points.length > 0;
-
-        // Temporary (never-persisted) entries have no server-side id to act on.
-        const showActionButtons = !entry.isTemporary;
-
-        const archiveBtnHtml = showActionButtons && opts.archiveAction
-          ? `<button type="button" class="btn-archive-toggle" data-entry-id="${entry.id}" data-action="${opts.archiveAction}">${opts.archiveAction === "archive" ? "Archive" : "Unarchive"}</button>`
-          : "";
-
-        const trashActionLabels = { trash: "Delete", restore: "Restore" };
-        const trashBtnHtml = showActionButtons && opts.trashAction
-          ? `<button type="button" class="btn-trash-toggle" data-entry-id="${entry.id}" data-action="${opts.trashAction}">${trashActionLabels[opts.trashAction]}</button>`
-          : "";
-
-        const deleteForeverBtnHtml = showActionButtons && opts.deleteForeverAction
-          ? `<button type="button" class="btn-trash-toggle btn-trash-toggle--danger" data-entry-id="${entry.id}" data-action="deleteForever">Delete Forever</button>`
-          : "";
-
-        const actionsHtml = archiveBtnHtml || trashBtnHtml || deleteForeverBtnHtml
-          ? `<span class="entry-actions">${archiveBtnHtml}${trashBtnHtml}${deleteForeverBtnHtml}</span>`
-          : "";
-
-        const temporaryBadgeHtml = entry.isTemporary ? '<span class="entry-badge temporary">Temporary</span>' : "";
-        const extractingHtml = entry.isExtracting
-          ? '<div class="temp-extracting"><span class="thinking-dots"><span></span><span></span><span></span></span></div>'
-          : "";
-        const actionPointsSection = entry.isTemporary
-          ? tempActionPointsHtml(entry.temp_action_points)
-          : actionPointsHtml(entry.action_points);
-
-        return `
-          <div class="entry-card${hasActions ? " has-actions" : ""}" data-entry-id="${entry.id}">
-            <div class="entry-header">
-              ${badgeHtml(entry.input_type)}
-              ${temporaryBadgeHtml}
-              <span class="entry-time">${timeStr}</span>
-              ${actionsHtml}
-            </div>
-            ${tagsHtml(entry.tags || [])}
-            <div class="entry-input">${escapeHtml(entry.input_text)}</div>
-            ${extractingHtml}
-            ${actionPointsSection}
-            ${reflectionHtml(entry.reflection)}
-            ${clarifyingHtml(entry.clarifying_question)}
           </div>
         `;
       }
@@ -6030,16 +5733,12 @@
 
       const VIEW_HEADINGS = {
         todoView: "To-do List",
-        archiveView: "Archive",
-        trashView: "Trash",
         settingsView: "Settings",
       };
 
       const VIEW_LOADERS = {
         homeView: loadEntries,
         todoView: loadTodoList,
-        archiveView: loadArchivedEntries,
-        trashView: loadTrashedEntries,
         settingsView: loadSettings,
       };
 

@@ -16,7 +16,7 @@
 // is what makes the activate handler below actually delete it instead of
 // stale-while-revalidate just adding to it and being "eventually
 // consistent within a session or two."
-const CACHE_NAME = "say-so-shell-5c7dfe3cd2c6";
+const CACHE_NAME = "say-so-shell-4367cd45aff3";
 const SHELL_ASSETS = ["/app", "/manifest.json", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
