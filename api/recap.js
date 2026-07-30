@@ -12,7 +12,7 @@ import { requireAuth } from "../lib/auth.js";
 import { generateRecap } from "../lib/ai.js";
 import { enforceRateLimit } from "../lib/rateLimit.js";
 import { isValidTimezone, isValidIsoDate } from "../lib/validation.js";
-import { computePeriodRange, computeFingerprint } from "../lib/recap.js";
+import { computePeriodRange, computeFingerprint, computePreviousPeriodStart } from "../lib/recap.js";
 import url from "url";
 
 // Recap generation is a real AI call, same cost profile as extraction - but
@@ -95,8 +95,16 @@ export default async function handler(req, res) {
     const entryTexts = periodEntries.map((e) => e.reflection ? `${e.input_text}\n(${e.reflection})` : e.input_text);
     const periodLabel = periodType === "week" ? "this week" : "this month";
 
+    // Best-effort continuity: if the immediately preceding period already
+    // has a cached recap, pass its summary along as optional context so
+    // this one can note continuity when it's real. A cache miss (never
+    // viewed, or generated fresh right now) just means no continuity
+    // context this time - never worth an extra AI call or blocking on.
+    const previousPeriodStart = computePreviousPeriodStart(periodType, start);
+    const previousRecap = await recaps.findCached(userId, periodType, previousPeriodStart);
+
     const [summary, entryTags] = await Promise.all([
-      generateRecap(entryTexts, completedInPeriod.map((ap) => ap.text), periodLabel),
+      generateRecap(entryTexts, completedInPeriod.map((ap) => ap.text), periodLabel, previousRecap?.summary || null),
       tagsTable.findByEntryIds(entryIds, userId),
     ]);
 
