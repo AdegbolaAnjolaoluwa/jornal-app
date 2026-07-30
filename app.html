@@ -4966,13 +4966,29 @@
       function renderStreakBadge() {
         const badge = document.getElementById("streakBadge");
         if (!badge || !state.streak) return;
-        if (state.streak.current <= 0) {
-          badge.style.display = "none";
+        const { current, longest } = state.streak;
+
+        if (current > 0) {
+          const day = current === 1 ? "day" : "days";
+          badge.textContent = `🔥 ${current} ${day} streak`;
+          badge.title = longest > current ? `Personal best: ${longest} days` : "";
+          badge.style.display = "";
           return;
         }
-        const day = state.streak.current === 1 ? "day" : "days";
-        badge.textContent = `🔥 ${state.streak.current} ${day} streak`;
-        badge.style.display = "";
+
+        // No active streak right now, but a past run is still worth
+        // showing - "0 days" reads as a failure with nothing to hold onto,
+        // "personal best" gives something encouraging instead of hiding the
+        // badge entirely right when a break might feel discouraging.
+        if (longest > 0) {
+          const day = longest === 1 ? "day" : "days";
+          badge.textContent = `🏅 Best: ${longest} ${day}`;
+          badge.title = "Start a new streak today";
+          badge.style.display = "";
+          return;
+        }
+
+        badge.style.display = "none";
       }
 
       // Nudges once per page load (not once per home-view visit, which could

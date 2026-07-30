@@ -2,14 +2,16 @@
  * GET /api/streak?timezone=<IANA zone>&today=<YYYY-MM-DD>
  * Current consecutive-day journaling streak for the user, computed in their
  * local timezone (not the server's UTC) so the day boundary matches what
- * they actually see on their clock.
+ * they actually see on their clock. Also reports the longest streak
+ * anywhere in their history, which may be the current one or a past run
+ * that's since ended.
  * Requires authentication
  */
 
 import { entries } from "../lib/db.js";
 import { requireAuth } from "../lib/auth.js";
 import { isValidTimezone, isValidIsoDate } from "../lib/validation.js";
-import { computeStreak } from "../lib/streak.js";
+import { computeStreak, computeLongestStreak } from "../lib/streak.js";
 import url from "url";
 
 export default async function handler(req, res) {
@@ -36,10 +38,11 @@ export default async function handler(req, res) {
 
     const activityDates = await entries.findActivityDates(userId, timezone);
     const streak = computeStreak(activityDates, today);
+    const longest = computeLongestStreak(activityDates);
 
     return res.status(200).json({
       success: true,
-      data: streak,
+      data: { ...streak, longest: Math.max(longest, streak.current) },
     });
   } catch (err) {
     if (err.status === 401) {
