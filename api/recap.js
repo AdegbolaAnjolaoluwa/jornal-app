@@ -54,9 +54,12 @@ export default async function handler(req, res) {
 
     const periodEntries = await entries.findByDateRange(userId, timezone, start, endExclusive);
     const entryIds = periodEntries.map((e) => e.id);
-    const periodActionPoints = entryIds.length > 0 ? await apTable.findByEntryIds(entryIds, userId) : [];
+    const [periodActionPoints, entryTags] =
+      entryIds.length > 0
+        ? await Promise.all([apTable.findByEntryIds(entryIds, userId), tagsTable.findByEntryIds(entryIds, userId)])
+        : [[], []];
 
-    const fingerprint = computeFingerprint(periodEntries, periodActionPoints);
+    const fingerprint = computeFingerprint(periodEntries, periodActionPoints, entryTags);
 
     const cached = await recaps.findCached(userId, periodType, start);
     if (cached && cached.fingerprint === fingerprint) {
@@ -103,10 +106,12 @@ export default async function handler(req, res) {
     const previousPeriodStart = computePreviousPeriodStart(periodType, start);
     const previousRecap = await recaps.findCached(userId, periodType, previousPeriodStart);
 
-    const [summary, entryTags] = await Promise.all([
-      generateRecap(entryTexts, completedInPeriod.map((ap) => ap.text), periodLabel, previousRecap?.summary || null),
-      tagsTable.findByEntryIds(entryIds, userId),
-    ]);
+    const summary = await generateRecap(
+      entryTexts,
+      completedInPeriod.map((ap) => ap.text),
+      periodLabel,
+      previousRecap?.summary || null
+    );
 
     const tagCounts = new Map();
     for (const t of entryTags) {
