@@ -1270,6 +1270,16 @@
         text-align: center;
       }
 
+      .ask-question-row {
+        margin-bottom: 6px;
+      }
+
+      .ask-hint {
+        font-size: 12.5px;
+        color: var(--ink-faint);
+        margin-bottom: 20px;
+      }
+
       .conversation-back-btn {
         display: inline-flex;
         align-items: center;
@@ -3238,6 +3248,9 @@
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>To-do List</span></span>
               <span class="sidebar-link-badge" id="todoOpenCountBadge" style="display: none"></span>
             </a>
+            <a href="#" class="sidebar-link" data-view="askView" title="Ask">
+              <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Ask</span></span>
+            </a>
             <a href="#" class="sidebar-link" data-view="recapView" title="Recap">
               <span class="sidebar-link-main"><span class="sidebar-dot"></span><span>Recap</span></span>
             </a>
@@ -3371,6 +3384,16 @@
               <div id="todoList"></div>
             </div>
 
+            <!-- Ask View -->
+            <div class="view" id="askView">
+              <form class="chat-input-row ask-question-row" id="askForm">
+                <input type="text" id="askInput" placeholder="Ask about your journal..." autocomplete="off" />
+                <button type="submit" class="chat-send-btn">Ask</button>
+              </form>
+              <div class="ask-hint">Ask about people, projects, or things you've mentioned.</div>
+              <div id="askContent"></div>
+            </div>
+
             <!-- Recap View -->
             <div class="view" id="recapView">
               <div class="recap-period-toggle">
@@ -3450,6 +3473,7 @@
             export: "/api/export",
             streak: "/api/streak",
             recap: "/api/recap",
+            ask: "/api/ask",
           },
         },
         voice: {
@@ -4429,6 +4453,76 @@
             `;
           })
           .join("");
+      }
+
+      // ===== Ask =====
+      // Loading an already-open Ask view (e.g. navigating back to it) just
+      // clears the input - the last answer, if any, stays visible until a
+      // new question is actually submitted. Each question replaces the
+      // previously shown answer rather than accumulating a list, since
+      // retrieval/grounding is independent per question.
+      function loadAskView() {
+        const input = document.getElementById("askInput");
+        if (input) input.value = "";
+      }
+
+      async function submitAskQuestion(question) {
+        const content = document.getElementById("askContent");
+        const input = document.getElementById("askInput");
+        const submitBtn = document.querySelector("#askForm .chat-send-btn");
+
+        if (content) content.innerHTML = '<div class="recap-loading">Thinking…</div>';
+        if (input) input.disabled = true;
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+          const response = await authFetch(CONFIG.api.endpoints.ask, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question }),
+          });
+          if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data?.error?.message || "Failed to get an answer");
+          }
+          const data = await response.json();
+          renderAskAnswer(question, data.data.answer);
+          if (input) input.value = "";
+        } catch (error) {
+          if (!(error instanceof SessionExpiredError)) {
+            if (content) {
+              content.innerHTML = `<div class="empty-state"><h3>Couldn't get an answer</h3><p>${escapeHtml(error.message)}</p></div>`;
+            }
+          }
+        } finally {
+          if (input) input.disabled = false;
+          if (submitBtn) submitBtn.disabled = false;
+        }
+      }
+
+      function renderAskAnswer(question, answer) {
+        const content = document.getElementById("askContent");
+        if (!content) return;
+        content.innerHTML = `
+          <div class="chat-thread">
+            <div class="chat-messages">
+              ${chatMessageHtml("user", question)}
+              ${chatMessageHtml("assistant", answer)}
+            </div>
+          </div>
+        `;
+      }
+
+      function bindAskForm() {
+        const form = document.getElementById("askForm");
+        if (!form) return;
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const input = document.getElementById("askInput");
+          const question = input?.value.trim();
+          if (!question) return;
+          submitAskQuestion(question);
+        });
       }
 
       // ===== Recap =====
@@ -6095,6 +6189,7 @@
 
       const VIEW_HEADINGS = {
         todoView: "To-do List",
+        askView: "Ask",
         recapView: "Recap",
         settingsView: "Settings",
       };
@@ -6102,6 +6197,7 @@
       const VIEW_LOADERS = {
         homeView: loadEntries,
         todoView: loadTodoList,
+        askView: loadAskView,
         recapView: loadRecap,
         settingsView: loadSettings,
       };
@@ -6401,6 +6497,9 @@
 
         // Recap period toggle (Week/Month) - static markup, bound once
         bindRecapPeriodToggle();
+
+        // Ask form - static markup, bound once
+        bindAskForm();
 
         // Form actions (plain-text path)
         document.getElementById("submitBtn").addEventListener("click", () => submitEntry());
