@@ -280,20 +280,21 @@
         gap: 10px;
       }
 
-      /* This interstitial is a neutral system message ("you're already
-         signed in"), not a branded call-to-action, so its buttons stay
-         black/white instead of the app's usual gold/teal accent. */
-      .auth-session-actions .btn-primary {
+      /* The auth screen (sign up, sign in, forgot/reset password, and the
+         "already signed in" interstitial) stays black/white throughout,
+         instead of the app's usual gold/teal accent used once inside the
+         product itself. */
+      .auth-card .btn-primary {
         background: var(--ink);
         color: var(--paper);
         box-shadow: none;
       }
 
-      .auth-session-actions .btn-primary:hover {
+      .auth-card .btn-primary:hover {
         filter: brightness(1.15);
       }
 
-      .auth-session-actions .btn-secondary {
+      .auth-card .btn-secondary {
         color: var(--ink);
         border-color: var(--border-input);
       }
@@ -454,7 +455,7 @@
 
       .wizard-dot.active,
       .wizard-dot.completed {
-        background: var(--gold);
+        background: var(--ink);
       }
 
       .wizard-step {
@@ -503,7 +504,7 @@
       }
 
       .remember-me input[type="checkbox"] {
-        accent-color: var(--gold);
+        accent-color: var(--ink);
         cursor: pointer;
       }
 
