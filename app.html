@@ -1280,6 +1280,39 @@
         margin-bottom: 20px;
       }
 
+      .ask-examples {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .ask-example-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 14px;
+        border-radius: 999px;
+        background: var(--teal-tint);
+        border: 1px solid var(--teal-tint-border);
+        color: var(--teal-dark);
+        font-size: 13px;
+        font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        line-height: 1.4;
+        text-align: left;
+      }
+
+      .ask-example-chip:hover {
+        filter: brightness(0.97);
+      }
+
+      .ask-nudge {
+        font-size: 12.5px;
+        color: var(--ink-faint);
+        padding: 0 4px;
+        margin-top: 4px;
+      }
+
       .conversation-back-btn {
         display: inline-flex;
         align-items: center;
@@ -3391,7 +3424,13 @@
                 <button type="submit" class="chat-send-btn">Ask</button>
               </form>
               <div class="ask-hint">Ask about people, projects, or things you've mentioned.</div>
-              <div id="askContent"></div>
+              <div id="askContent">
+                <div class="ask-examples" id="askExamples">
+                  <button type="button" class="ask-example-chip">What have I written about work stress?</button>
+                  <button type="button" class="ask-example-chip">When did I last mention feeling good?</button>
+                  <button type="button" class="ask-example-chip">What projects have come up recently?</button>
+                </div>
+              </div>
             </div>
 
             <!-- Recap View -->
@@ -4471,7 +4510,10 @@
         const input = document.getElementById("askInput");
         const submitBtn = document.querySelector("#askForm .chat-send-btn");
 
-        if (content) content.innerHTML = '<div class="recap-loading">Thinking…</div>';
+        if (content) {
+          content.innerHTML =
+            '<div class="recap-loading">Thinking <span class="thinking-dots"><span></span><span></span><span></span></span></div>';
+        }
         if (input) input.disabled = true;
         if (submitBtn) submitBtn.disabled = true;
 
@@ -4500,15 +4542,27 @@
         }
       }
 
+      // Matches api/ask.js's NOTHING_FOUND_ANSWER exactly - when the backend's
+      // hard-coded empty-retrieval string comes back, add a next-step
+      // suggestion in the UI rather than leaving the user at a dead end.
+      // Kept as a separate frontend-only line (not baked into the API
+      // string) so this is pure UI copy, not an API contract change.
+      const ASK_NOTHING_FOUND_ANSWER = "I don't see anything in your journal about that yet.";
+
       function renderAskAnswer(question, answer) {
         const content = document.getElementById("askContent");
         if (!content) return;
+        const nudge =
+          answer === ASK_NOTHING_FOUND_ANSWER
+            ? '<div class="ask-nudge">Try different words, or ask about a specific person, project, or date.</div>'
+            : "";
         content.innerHTML = `
           <div class="chat-thread">
             <div class="chat-messages">
               ${chatMessageHtml("user", question)}
               ${chatMessageHtml("assistant", answer)}
             </div>
+            ${nudge}
           </div>
         `;
       }
@@ -4523,6 +4577,17 @@
           if (!question) return;
           submitAskQuestion(question);
         });
+
+        // Delegated so it still works after askContent gets re-rendered
+        // with an answer/error (the example chips only exist pre-submit).
+        const content = document.getElementById("askContent");
+        if (content) {
+          content.addEventListener("click", (e) => {
+            const chip = e.target.closest(".ask-example-chip");
+            if (!chip) return;
+            submitAskQuestion(chip.textContent.trim());
+          });
+        }
       }
 
       // ===== Recap =====
