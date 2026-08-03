@@ -6492,9 +6492,9 @@
         localStorage.setItem("theme", value);
         applyTheme(value);
         renderThemeToggle();
-        // The auth-screen and home-screen light rays are tinted from the
-        // theme's --gold variable, so switching themes needs to re-tint them
-        // too, not just the rest of the UI.
+        // The auth-screen and home-screen light rays pick white (dark mode)
+        // vs. gray (light mode) based on the theme, so switching themes
+        // needs to re-tint them too, not just the rest of the UI.
         if (window.restartAuthRays) window.restartAuthRays();
         if (window.restartHomeRays) window.restartHomeRays();
         // Same for any mounted curved-input fields (signup wizard) - each
@@ -6985,14 +6985,19 @@
         const container = document.getElementById("authRays");
         if (!container) return;
 
-        // Tint the rays from the current theme's gold accent (read live off
-        // the CSS custom property) so they match light/dark mode automatically
-        // and stay in sync if the theme is switched while the auth screen is open.
-        const goldHex = getComputedStyle(document.documentElement).getPropertyValue("--gold").trim();
+        // Neutral white/gray glow instead of a gold tint: white rays read as
+        // a bright glow against the true-black dark background, and a soft
+        // gray keeps the same effect visible (rather than vanishing) against
+        // the true-white light background. Re-evaluated live off the theme
+        // so it stays in sync if the theme is switched while this screen is open.
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark" ||
+          (!document.documentElement.hasAttribute("data-theme") &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        const raysColor = isDark ? "#ffffff" : "#c9c9c9";
 
         destroyAuthRays = initLightRays(container, {
           raysOrigin: "top-center",
-          raysColor: goldHex || "#b8873a",
+          raysColor,
           raysSpeed: 0.9,
           lightSpread: 0.65,
           rayLength: 1.4,
@@ -7024,11 +7029,15 @@
         if (!container) return;
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-        const goldHex = getComputedStyle(document.documentElement).getPropertyValue("--gold").trim();
+        // See startAuthRays() above for why this isn't a straight gold tint.
+        const isDarkHome = document.documentElement.getAttribute("data-theme") === "dark" ||
+          (!document.documentElement.hasAttribute("data-theme") &&
+            window.matchMedia("(prefers-color-scheme: dark)").matches);
+        const homeRaysColor = isDarkHome ? "#ffffff" : "#c9c9c9";
 
         destroyHomeRays = initLightRays(container, {
           raysOrigin: "top-center",
-          raysColor: goldHex || "#b8873a",
+          raysColor: homeRaysColor,
           raysSpeed: 0.9,
           lightSpread: 0.65,
           rayLength: 1.4,
