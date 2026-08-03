@@ -1535,13 +1535,13 @@
       }
 
       .btn-mic.is-recording {
-        box-shadow: 0 0 0 8px color-mix(in srgb, var(--gold) 18%, transparent);
+        box-shadow: 0 0 0 8px color-mix(in srgb, var(--ink) 18%, transparent);
         animation: micPulse 1.6s ease-in-out infinite;
       }
 
       @keyframes micPulse {
-        0%, 100% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--gold) 14%, transparent); }
-        50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--gold) 22%, transparent); }
+        0%, 100% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--ink) 14%, transparent); }
+        50% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--ink) 22%, transparent); }
       }
 
       .btn-submit-circle:disabled {
@@ -1588,12 +1588,12 @@
       .composer--recording .composer-field,
       .composer--paused .composer-field {
         border-radius: 12px;
-        box-shadow: 0 4px 24px color-mix(in srgb, var(--gold) 15%, transparent);
+        box-shadow: 0 4px 24px color-mix(in srgb, var(--ink) 15%, transparent);
       }
 
       .composer--recording .composer-textarea,
       .composer--paused .composer-textarea {
-        border-color: var(--gold);
+        border-color: var(--ink);
       }
 
       .composer-controls {
@@ -1629,8 +1629,8 @@
       }
 
       .ctrl-pause {
-        background: var(--gold-tint);
-        color: var(--gold-dark);
+        background: var(--sidebar-bg);
+        color: var(--ink);
       }
 
       .ctrl-finish {
@@ -1655,7 +1655,7 @@
         width: 4px;
         min-height: 4px;
         border-radius: 3px;
-        background: var(--gold);
+        background: var(--ink);
         transform-origin: center;
         transition: transform 0.08s linear;
       }
@@ -1809,8 +1809,8 @@
 
       .btn-submit {
         padding: 12px 22px;
-        background: var(--gold);
-        color: #fff;
+        background: var(--ink);
+        color: var(--paper);
         border-radius: 11px;
         border: none;
         font-weight: 600;
@@ -1860,8 +1860,8 @@
         border-radius: 50%;
         border: none;
         cursor: pointer;
-        background: var(--gold);
-        color: #fff;
+        background: var(--ink);
+        color: var(--paper);
         flex-shrink: 0;
         display: flex;
         align-items: center;
@@ -1870,7 +1870,7 @@
 
       .preview-scrubber {
         flex: 1;
-        accent-color: var(--gold);
+        accent-color: var(--ink);
       }
 
       .preview-time {
@@ -1969,9 +1969,9 @@
       }
 
       .send-option-btn--primary {
-        background: var(--gold);
-        border-color: var(--gold);
-        color: #fff;
+        background: var(--ink);
+        border-color: var(--ink);
+        color: var(--paper);
       }
 
       .send-option-btn:hover {
@@ -2075,15 +2075,15 @@
       }
 
       .entry-badge.text {
-        background: rgba(43, 36, 25, 0.06);
+        background: color-mix(in srgb, var(--ink) 6%, transparent);
         border: 1px solid var(--border);
         color: var(--ink-soft);
       }
 
       .entry-badge.temporary {
-        background: color-mix(in srgb, var(--gold) 12%, transparent);
-        border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
-        color: var(--gold);
+        background: var(--sidebar-bg);
+        border: 1px solid var(--border);
+        color: var(--ink-soft);
       }
 
       .badge-icon-voice {
@@ -2652,7 +2652,7 @@
         position: fixed;
         inset: 0;
         z-index: 100;
-        background: rgba(43, 36, 25, 0.45);
+        background: color-mix(in srgb, var(--ink) 45%, transparent);
         overflow-y: auto;
         padding: 40px 20px;
       }
