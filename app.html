@@ -280,6 +280,24 @@
         gap: 10px;
       }
 
+      /* This interstitial is a neutral system message ("you're already
+         signed in"), not a branded call-to-action, so its buttons stay
+         black/white instead of the app's usual gold/teal accent. */
+      .auth-session-actions .btn-primary {
+        background: var(--ink);
+        color: var(--paper);
+        box-shadow: none;
+      }
+
+      .auth-session-actions .btn-primary:hover {
+        filter: brightness(1.15);
+      }
+
+      .auth-session-actions .btn-secondary {
+        color: var(--ink);
+        border-color: var(--border-input);
+      }
+
       .auth-tabs {
         display: flex;
         background: var(--sidebar-bg);
