@@ -3286,7 +3286,7 @@
 
     <!-- App Screen -->
     <div class="app-screen" id="appScreen">
-      <div class="offline-banner" id="offlineBanner">You're offline — showing your last-known data. Some actions won't work until you reconnect.</div>
+      <div class="offline-banner" id="offlineBanner">You're offline, showing your last-known data. Some actions won't work until you reconnect.</div>
       <div class="header">
         <div class="header-content">
           <h1>Say So</h1>
@@ -4349,7 +4349,7 @@
               // recorded audio, still held in state.audioBlob) stays exactly as
               // typed so hitting Save again once back online just works, rather
               // than a generic error making it look like the draft was lost.
-              showAlert("You're offline. Your entry is still here — hit Save again once you're back online.", "error");
+              showAlert("You're offline. Your entry is still here, hit Save again once you're back online.", "error");
             } else {
               showAlert(`Failed to submit entry: ${error.message}`, "error");
             }
@@ -4462,7 +4462,7 @@
                 state.entries = [...tempEntries, ...cached.entries];
                 renderEntries();
                 showAlert(
-                  `You're offline — showing your journal as of ${new Date(cached.cachedAt).toLocaleString()}.`,
+                  `You're offline, showing your journal as of ${new Date(cached.cachedAt).toLocaleString()}.`,
                   "info"
                 );
                 return;
@@ -5214,7 +5214,7 @@
 
         state.streakNudgeShown = true;
         const day = state.streak.current === 1 ? "day" : "days";
-        showToast(`Don't lose your ${state.streak.current}-${day} streak — write something today`, "warning");
+        showToast(`Don't lose your ${state.streak.current}-${day} streak, write something today`, "warning");
       }
 
       async function updateActionPoint(entryId, apId, fields) {
@@ -6644,7 +6644,7 @@
           const btn = document.getElementById("tempChatBtn");
           btn.classList.toggle("active", state.isTemporaryMode);
           btn.setAttribute("aria-pressed", String(state.isTemporaryMode));
-          btn.title = state.isTemporaryMode ? "Temporary chat (on) — entries won't be saved" : "Temporary chat";
+          btn.title = state.isTemporaryMode ? "Temporary chat (on), entries won't be saved" : "Temporary chat";
         });
         document.getElementById("clearTempBtn").addEventListener("click", () => {
           state.entries = state.entries.filter((e) => !e.isTemporary);
