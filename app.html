@@ -842,12 +842,18 @@
         flex-direction: column;
         box-sizing: border-box;
         overflow: hidden;
-        transition: width 0.2s ease, padding 0.2s ease;
+        transition: width 0.2s ease, padding 0.2s ease, border-color 0.2s ease;
       }
 
+      /* Desktop "collapsed" = fully hidden (0 width), not an icon rail -
+         matches ChatGPT desktop's sidebar, where the floating hamburger-btn
+         (below) becomes the only way back in once it's gone. Mobile
+         overrides this back to its own off-canvas drawer treatment further
+         down in the 860px media query, so this only applies on desktop. */
       .sidebar.collapsed {
-        width: 76px;
-        padding: 20px 12px;
+        width: 0;
+        padding: 20px 0;
+        border-right-color: transparent;
       }
 
       .sidebar-brand-row {
@@ -857,15 +863,6 @@
         gap: 8px;
         margin-bottom: 20px;
         min-height: 28px;
-      }
-
-      .sidebar.collapsed .sidebar-brand-row {
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .sidebar.collapsed .sidebar-brand {
-        justify-content: center;
       }
 
       .sidebar-brand {
@@ -880,10 +877,6 @@
       .sidebar-brand:focus-visible {
         outline: 2px solid var(--gold);
         outline-offset: 2px;
-      }
-
-      .sidebar.collapsed .sidebar-brand span {
-        display: none;
       }
 
       .sidebar-brand-dot {
@@ -940,19 +933,10 @@
         filter: brightness(1.06);
       }
 
-      .sidebar.collapsed .sidebar-new-entry-btn {
-        justify-content: center;
-        padding: 12px 0;
-      }
-
       .sidebar-new-entry-icon {
         font-size: 16px;
         line-height: 1;
         flex-shrink: 0;
-      }
-
-      .sidebar.collapsed .sidebar-new-entry-label {
-        display: none;
       }
 
       .sidebar-history {
@@ -961,10 +945,6 @@
         margin: 0 -6px 12px;
         padding: 0 6px;
         min-height: 40px;
-      }
-
-      .sidebar.collapsed .sidebar-history {
-        display: none;
       }
 
       .sidebar-history-group-label {
@@ -1032,19 +1012,10 @@
         box-sizing: border-box;
       }
 
-      .sidebar.collapsed .sidebar-link {
-        justify-content: center;
-        padding: 10px 0;
-      }
-
       .sidebar-link-main {
         display: flex;
         align-items: center;
         gap: 10px;
-      }
-
-      .sidebar.collapsed .sidebar-link-main span:last-child {
-        display: none;
       }
 
       .sidebar-link-badge {
@@ -1060,15 +1031,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-      }
-
-      .sidebar.collapsed .sidebar-link-badge {
-        display: none !important;
-      }
-
-      .sidebar.collapsed .sidebar-dot {
-        width: 9px;
-        height: 9px;
       }
 
       .sidebar-dot {
@@ -1123,15 +1085,37 @@
         display: block;
       }
 
+      /* Floating sidebar-open button, shown whenever the sidebar itself is
+         not visible (desktop: sidebar.collapsed; mobile: drawer closed) -
+         pinned to the viewport rather than living inside .main-content's
+         flow, so it stays reachable regardless of sidebar width/position.
+         Visibility is toggled via body.sidebar-hidden in JS (see
+         applySidebarCollapsed/openSidebarDrawer/closeSidebarDrawer). */
       .hamburger-btn {
         display: none;
-        background: none;
-        border: none;
+        position: fixed;
+        top: 14px;
+        left: 16px;
+        z-index: 80;
+        width: 38px;
+        height: 38px;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
         cursor: pointer;
-        padding: 8px;
-        border-radius: 8px;
         color: var(--ink-soft);
-        margin-bottom: 8px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .hamburger-btn:hover {
+        color: var(--ink);
+        box-shadow: var(--shadow-md);
+      }
+
+      body.sidebar-hidden .hamburger-btn {
+        display: flex;
       }
 
       .main-content {
@@ -2924,22 +2908,11 @@
           transform: translateX(0);
         }
 
+        /* "Collapsed" (fully hidden) is a desktop-only concept; on mobile the
+           drawer is always shown at full width whenever it's open. */
         .sidebar.collapsed {
           width: 280px;
           padding: 20px 16px;
-        }
-
-        /* Collapsed styling is a desktop-only concept; on mobile the drawer
-           is always shown at full width when open, icon-rail state doesn't apply. */
-        .sidebar.collapsed .sidebar-brand span,
-        .sidebar.collapsed .sidebar-new-entry-label,
-        .sidebar.collapsed .sidebar-history,
-        .sidebar.collapsed .sidebar-link-main span:last-child {
-          display: initial;
-        }
-
-        .hamburger-btn {
-          display: flex;
         }
 
         .main-content {
@@ -6529,8 +6502,17 @@
       }
 
       // ===== Sidebar collapse/expand (desktop) + mobile drawer =====
+      // body.sidebar-hidden drives the floating hamburger-btn's visibility
+      // (see its CSS) - true whenever the sidebar itself isn't showing,
+      // regardless of which of the two mechanisms below caused that.
+      function updateSidebarHiddenClass() {
+        const hidden = isMobileViewport() ? !state.sidebarMobileOpen : state.sidebarCollapsed;
+        document.body.classList.toggle("sidebar-hidden", hidden);
+      }
+
       function applySidebarCollapsed(collapsed) {
         document.getElementById("appSidebar").classList.toggle("collapsed", collapsed);
+        updateSidebarHiddenClass();
       }
 
       function toggleSidebarCollapsed() {
@@ -6545,17 +6527,25 @@
         state.sidebarMobileOpen = true;
         document.getElementById("appSidebar").classList.add("mobile-open");
         document.getElementById("sidebarBackdrop").classList.add("active");
+        updateSidebarHiddenClass();
       }
 
       function closeSidebarDrawer() {
         state.sidebarMobileOpen = false;
         document.getElementById("appSidebar").classList.remove("mobile-open");
         document.getElementById("sidebarBackdrop").classList.remove("active");
+        updateSidebarHiddenClass();
       }
 
       function isMobileViewport() {
         return window.matchMedia("(max-width: 860px)").matches;
       }
+
+      // Resizing across the mobile/desktop breakpoint changes what
+      // "sidebar-hidden" means (drawer-closed vs. desktop-collapsed) without
+      // any click firing, so re-derive it directly rather than waiting for
+      // the next toggle.
+      window.addEventListener("resize", updateSidebarHiddenClass);
 
       // ===== Event Listeners =====
       document.addEventListener("DOMContentLoaded", () => {
@@ -6728,7 +6718,16 @@
             toggleSidebarCollapsed();
           }
         });
-        document.getElementById("hamburgerBtn").addEventListener("click", openSidebarDrawer);
+        // hamburgerBtn is only ever visible while the sidebar is hidden (see
+        // body.sidebar-hidden), so it only ever needs to open it back up -
+        // on mobile that's the drawer, on desktop it's un-collapsing.
+        document.getElementById("hamburgerBtn").addEventListener("click", () => {
+          if (isMobileViewport()) {
+            openSidebarDrawer();
+          } else {
+            toggleSidebarCollapsed();
+          }
+        });
         document.getElementById("sidebarBackdrop").addEventListener("click", closeSidebarDrawer);
 
         // Guide screen -> guided first entry
