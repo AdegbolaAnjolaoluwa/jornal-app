@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FAQ — Say So</title>
+    <meta name="description" content="Frequently asked questions about Say So: privacy, data export, account deletion, and how the app works." />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <meta name="theme-color" content="#000000" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --page-bg: #ffffff;
+        --surface: #fafafa;
+        --ink: #171717;
+        --ink-soft: #5c5c5c;
+        --ink-faint: #9a9a9a;
+        --border: rgba(0, 0, 0, 0.1);
+        --gold: #a8722a;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Figtree", system-ui, sans-serif;
+        color: var(--ink);
+        background: var(--page-bg);
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.6;
+      }
+
+      a {
+        color: var(--gold);
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 28px 24px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "Fraunces", "Figtree", serif;
+        font-weight: 600;
+        font-size: 18px;
+        text-decoration: none;
+        color: var(--ink);
+      }
+
+      .brand-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+
+      .nav a.back {
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--ink-soft);
+      }
+
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 8px 24px 80px;
+      }
+
+      h1 {
+        font-family: "Fraunces", "Figtree", serif;
+        font-size: 36px;
+        font-weight: 600;
+        margin: 0 0 6px;
+        letter-spacing: -0.01em;
+      }
+
+      .updated {
+        font-size: 13px;
+        color: var(--ink-faint);
+        margin: 0 0 40px;
+      }
+
+      h2 {
+        font-family: "Fraunces", "Figtree", serif;
+        font-size: 20px;
+        font-weight: 600;
+        margin: 40px 0 10px;
+      }
+
+      h2:first-of-type {
+        margin-top: 0;
+      }
+
+      p {
+        font-size: 15.5px;
+        color: var(--ink-soft);
+        margin: 0 0 14px;
+      }
+
+      ul {
+        margin: 0 0 14px;
+        padding-left: 22px;
+        color: var(--ink-soft);
+        font-size: 15.5px;
+      }
+
+      li {
+        margin-bottom: 6px;
+      }
+
+      .page-links {
+        display: flex;
+        gap: 20px;
+        margin-top: 56px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
+        font-size: 13.5px;
+      }
+
+      .page-links a {
+        color: var(--ink-soft);
+        text-decoration: none;
+      }
+
+      .page-links a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="nav">
+      <a href="/" class="brand"><span class="brand-dot"></span><span>Say So</span></a>
+      <a href="/" class="back">&larr; Back home</a>
+    </div>
+
+    <main>
+      <h1>Frequently asked questions</h1>
+      <p class="updated">Last updated: [add date before publishing]</p>
+
+      <h2>What is Say So?</h2>
+      <p>
+        Say So is a place to capture what's on your mind by voice or text. After you write or record an entry, it
+        reflects what you said back to you, pulls out any action points, and asks a clarifying question if something
+        seems worth following up on.
+      </p>
+
+      <h2>Is my journal private?</h2>
+      <p>
+        Your entries are never made public and never shared with other users — there's no social or sharing feature
+        anywhere in the app, and your data is never sold. To generate reflections, action points, and summaries,
+        your entry text is sent to Groq, the AI provider that powers those features (see our
+        <a href="/privacy">Privacy Policy</a> for the full list of who processes your data and why). "Private" means
+        it stays yours and off-limits to other users — not that no service ever touches it in order to work.
+      </p>
+
+      <h2>Can I export my data?</h2>
+      <p>
+        Yes. Say So can generate a full export of your entries, action points, and tags as a JSON file, so your
+        journal is never locked in.
+      </p>
+
+      <h2>Can I delete my account?</h2>
+      <p>
+        Account deletion isn't yet a self-service button in the app. To request full deletion of your account and
+        all associated data, contact us at <strong>[add your contact email here]</strong> and we'll process the
+        request within 30 days. You can delete individual entries yourself at any time from within the app.
+      </p>
+
+      <h2>What happens to voice entries?</h2>
+      <p>
+        When you record a voice entry, the audio is transcribed and stored alongside the entry so you can play it
+        back later. Like text entries, the transcript is used to generate your reflection and action points.
+      </p>
+
+      <h2>What are tags, Recap, and Ask?</h2>
+      <p>
+        Tags let you label entries with your own freeform categories, with autocomplete so you naturally reuse the
+        same ones. Recap is a weekly or monthly AI-generated summary of what you've been writing about, including
+        your most-used tags. Ask lets you ask a natural-language question about your own journal history — like
+        "when did I last mention Sam?" — and get an answer grounded only in what you've actually written; if nothing
+        relevant is found, it says so rather than guessing.
+      </p>
+
+      <h2>Why am I sometimes asked to slow down?</h2>
+      <p>
+        Sign-in, sign-up, and password reset are all rate-limited to protect accounts from abuse. If you hit a
+        limit, wait a few minutes and try again.
+      </p>
+
+      <h2>Is there a minimum age to use Say So?</h2>
+      <p>
+        Yes — see our <a href="/terms">Terms of Service</a> for the age requirement.
+      </p>
+
+      <div class="page-links">
+        <a href="/terms">Terms of Service</a>
+        <a href="/privacy">Privacy Policy</a>
+      </div>
+    </main>
+  </body>
+</html>

@@ -428,8 +428,25 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
         font-size: 13px;
         color: var(--on-dark-faint);
+      }
+
+      .footer-links {
+        display: flex;
+        gap: 20px;
+      }
+
+      .footer-links a {
+        text-decoration: none;
+        color: var(--on-dark-faint);
+      }
+
+      .footer-links a:hover {
+        color: var(--on-dark-soft);
+        text-decoration: underline;
       }
 
       @media (max-width: 860px) {
@@ -571,7 +588,11 @@
     <footer>
       <div class="footer-inner">
         <span>&copy; <span id="year"></span> Say So</span>
-        <span>Your entries stay private. Always.</span>
+        <div class="footer-links">
+          <a href="/faq">FAQ</a>
+          <a href="/terms">Terms</a>
+          <a href="/privacy">Privacy</a>
+        </div>
       </div>
     </footer>
 
