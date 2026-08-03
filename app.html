@@ -17,100 +17,149 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <meta name="theme-color" content="#1a1a1a" />
+    <meta name="theme-color" content="#000000" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Say So" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
-        --paper: #faf6ec;
+        --paper: #ffffff;
         --surface: #ffffff;
-        --surface-warm: #fffdf7;
-        --sidebar-bg: #f4eee0;
-        --ink: #2b2419;
-        --ink-soft: #736a5b;
-        --ink-faint: #a79c89;
-        --border: rgba(43, 36, 25, 0.12);
-        --border-input: rgba(43, 36, 25, 0.16);
-        --gold: #b8873a;
-        --gold-dark: #96692a;
+        --surface-warm: #ffffff;
+        --sidebar-bg: #fafafa;
+        --ink: #171717;
+        --ink-soft: #5c5c5c;
+        --ink-faint: #9a9a9a;
+        --border: rgba(0, 0, 0, 0.1);
+        --border-input: rgba(0, 0, 0, 0.15);
+        --gold: #a8722a;
+        --gold-dark: #8a5c22;
         --gold-tint: #fbf1dd;
         --gold-tint-border: #e9d6aa;
-        --teal: #4c7a72;
-        --teal-dark: #35594f;
+        --teal: #3f6b63;
+        --teal-dark: #2c4d46;
         --teal-tint: #e8f1ee;
         --teal-tint-border: #c7ded7;
         --error: #b0473c;
         --error-tint: #fbeae7;
         --error-tint-border: rgba(176, 71, 60, 0.3);
-        --nav-dot-disabled: #d8d0be;
-        --soon-badge-bg: #ede6d6;
-        --shadow-sm: 0 1px 2px rgba(43, 36, 25, 0.06);
-        --shadow-md: 0 6px 20px rgba(43, 36, 25, 0.08);
-        --shadow-lg: 0 10px 30px rgba(43, 36, 25, 0.1);
-        --shadow-modal: 0 30px 80px rgba(43, 36, 25, 0.25);
+        --nav-dot-disabled: #d4d4d4;
+        --soon-badge-bg: #f0f0f0;
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.07);
+        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.09);
+        --shadow-modal: 0 30px 80px rgba(0, 0, 0, 0.22);
+
+        /* Display face for headings/journal entry text; Figtree stays the
+           UI-chrome face (buttons, nav, labels, form inputs). Scale used
+           for headings/major text only - the many small ad-hoc UI sizes
+           elsewhere in the file are left as-is. */
+        --font-display: "Fraunces", "Figtree", serif;
+        --text-md: 16px;
+        --text-lg: 18px;
+        --text-xl: 20px;
+        --text-2xl: 24px;
+        --text-3xl: 30px;
+        --text-4xl: 36px;
+      }
+
+      /* Dark palette lives once, on a class-free custom-property bundle
+         (--dark-*), and both the explicit toggle and the "system" media
+         query just point their real tokens at it - keeps the two dark
+         paths (explicit "dark", OS-preference "system") from drifting
+         out of sync the way the old duplicated blocks could. */
+      :root {
+        --dark-paper: #000000;
+        --dark-surface: #0a0a0a;
+        --dark-surface-warm: #0a0a0a;
+        --dark-sidebar-bg: #0d0d0d;
+        --dark-ink: #f2f2f2;
+        --dark-ink-soft: #b0b0b0;
+        --dark-ink-faint: #757575;
+        --dark-border: rgba(255, 255, 255, 0.12);
+        --dark-border-input: rgba(255, 255, 255, 0.18);
+        --dark-gold: #d9a75a;
+        --dark-gold-dark: #ecc27a;
+        --dark-gold-tint: #2e2412;
+        --dark-gold-tint-border: #4a3a1e;
+        --dark-teal: #74ac9f;
+        --dark-teal-dark: #94c4b9;
+        --dark-teal-tint: #16241f;
+        --dark-teal-tint-border: #274037;
+        --dark-error: #d97a6c;
+        --dark-error-tint: #2c1a17;
+        --dark-error-tint-border: #4d2b25;
+        --dark-nav-dot-disabled: #3a3a3a;
+        --dark-soon-badge-bg: #1a1a1a;
+        --dark-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+        --dark-shadow-md: 0 6px 20px rgba(0, 0, 0, 0.55);
+        --dark-shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
+        --dark-shadow-modal: 0 30px 80px rgba(0, 0, 0, 0.75);
       }
 
       html[data-theme="dark"] {
-        --paper: #1b1712;
-        --surface: #26211a;
-        --surface-warm: #2c261e;
-        --sidebar-bg: #221d17;
-        --ink: #f0e9db;
-        --ink-soft: #c2b8a3;
-        --ink-faint: #8a7f6b;
-        --border: rgba(240, 233, 219, 0.12);
-        --border-input: rgba(240, 233, 219, 0.18);
-        --gold: #d4a24e;
-        --gold-dark: #e8bc6f;
-        --gold-tint: #3a2f1c;
-        --gold-tint-border: #554426;
-        --teal: #6fa89c;
-        --teal-dark: #8fc0b5;
-        --teal-tint: #1f3430;
-        --teal-tint-border: #2f4f47;
-        --error: #d97a6c;
-        --error-tint: #3a2320;
-        --error-tint-border: #5c342e;
-        --nav-dot-disabled: #4a4234;
-        --soon-badge-bg: #332c20;
-        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
-        --shadow-modal: 0 30px 80px rgba(0, 0, 0, 0.55);
+        --paper: var(--dark-paper);
+        --surface: var(--dark-surface);
+        --surface-warm: var(--dark-surface-warm);
+        --sidebar-bg: var(--dark-sidebar-bg);
+        --ink: var(--dark-ink);
+        --ink-soft: var(--dark-ink-soft);
+        --ink-faint: var(--dark-ink-faint);
+        --border: var(--dark-border);
+        --border-input: var(--dark-border-input);
+        --gold: var(--dark-gold);
+        --gold-dark: var(--dark-gold-dark);
+        --gold-tint: var(--dark-gold-tint);
+        --gold-tint-border: var(--dark-gold-tint-border);
+        --teal: var(--dark-teal);
+        --teal-dark: var(--dark-teal-dark);
+        --teal-tint: var(--dark-teal-tint);
+        --teal-tint-border: var(--dark-teal-tint-border);
+        --error: var(--dark-error);
+        --error-tint: var(--dark-error-tint);
+        --error-tint-border: var(--dark-error-tint-border);
+        --nav-dot-disabled: var(--dark-nav-dot-disabled);
+        --soon-badge-bg: var(--dark-soon-badge-bg);
+        --shadow-sm: var(--dark-shadow-sm);
+        --shadow-md: var(--dark-shadow-md);
+        --shadow-lg: var(--dark-shadow-lg);
+        --shadow-modal: var(--dark-shadow-modal);
       }
 
       @media (prefers-color-scheme: dark) {
         html:not([data-theme="light"]):not([data-theme="dark"]) {
-          --paper: #1b1712;
-          --surface: #26211a;
-          --surface-warm: #2c261e;
-          --sidebar-bg: #221d17;
-          --ink: #f0e9db;
-          --ink-soft: #c2b8a3;
-          --ink-faint: #8a7f6b;
-          --border: rgba(240, 233, 219, 0.12);
-          --border-input: rgba(240, 233, 219, 0.18);
-          --gold: #d4a24e;
-          --gold-dark: #e8bc6f;
-          --gold-tint: #3a2f1c;
-          --gold-tint-border: #554426;
-          --teal: #6fa89c;
-          --teal-dark: #8fc0b5;
-          --teal-tint: #1f3430;
-          --teal-tint-border: #2f4f47;
-          --error: #d97a6c;
-          --error-tint: #3a2320;
-          --error-tint-border: #5c342e;
-          --nav-dot-disabled: #4a4234;
-          --soon-badge-bg: #332c20;
-          --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-          --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-          --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.4);
-          --shadow-modal: 0 30px 80px rgba(0, 0, 0, 0.55);
+          --paper: var(--dark-paper);
+          --surface: var(--dark-surface);
+          --surface-warm: var(--dark-surface-warm);
+          --sidebar-bg: var(--dark-sidebar-bg);
+          --ink: var(--dark-ink);
+          --ink-soft: var(--dark-ink-soft);
+          --ink-faint: var(--dark-ink-faint);
+          --border: var(--dark-border);
+          --border-input: var(--dark-border-input);
+          --gold: var(--dark-gold);
+          --gold-dark: var(--dark-gold-dark);
+          --gold-tint: var(--dark-gold-tint);
+          --gold-tint-border: var(--dark-gold-tint-border);
+          --teal: var(--dark-teal);
+          --teal-dark: var(--dark-teal-dark);
+          --teal-tint: var(--dark-teal-tint);
+          --teal-tint-border: var(--dark-teal-tint-border);
+          --error: var(--dark-error);
+          --error-tint: var(--dark-error-tint);
+          --error-tint-border: var(--dark-error-tint-border);
+          --nav-dot-disabled: var(--dark-nav-dot-disabled);
+          --soon-badge-bg: var(--dark-soon-badge-bg);
+          --shadow-sm: var(--dark-shadow-sm);
+          --shadow-md: var(--dark-shadow-md);
+          --shadow-lg: var(--dark-shadow-lg);
+          --shadow-modal: var(--dark-shadow-modal);
         }
       }
 
@@ -199,8 +248,9 @@
       }
 
       .auth-brand span {
-        font-size: 20px;
-        font-weight: 700;
+        font-family: var(--font-display);
+        font-size: var(--text-xl);
+        font-weight: 600;
         letter-spacing: -0.01em;
       }
 
@@ -528,8 +578,9 @@
       }
 
       .guide-title {
-        font-size: 32px;
-        font-weight: 700;
+        font-family: var(--font-display);
+        font-size: var(--text-4xl);
+        font-weight: 600;
         line-height: 1.25;
         color: var(--ink);
         margin-bottom: 14px;
@@ -585,8 +636,9 @@
       }
 
       .guide-card h2 {
-        font-size: 17px;
-        font-weight: 700;
+        font-family: var(--font-display);
+        font-size: var(--text-lg);
+        font-weight: 600;
         color: var(--ink);
         margin-bottom: 8px;
       }
@@ -635,9 +687,10 @@
       }
 
       .header h1 {
-        font-size: 22px;
+        font-family: var(--font-display);
+        font-size: var(--text-2xl);
         color: var(--ink);
-        font-weight: 700;
+        font-weight: 600;
       }
 
       .header-actions {
@@ -823,8 +876,9 @@
       }
 
       .sidebar-brand span {
-        font-size: 17px;
-        font-weight: 700;
+        font-family: var(--font-display);
+        font-size: var(--text-lg);
+        font-weight: 600;
         white-space: nowrap;
       }
 
@@ -1075,8 +1129,9 @@
       }
 
       .content-heading {
-        font-size: 24px;
-        font-weight: 700;
+        font-family: var(--font-display);
+        font-size: var(--text-2xl);
+        font-weight: 600;
         margin-bottom: 24px;
       }
 
@@ -1138,8 +1193,9 @@
       }
 
       .home-greeting {
-        font-size: 32px;
-        font-weight: 700;
+        font-family: var(--font-display);
+        font-size: var(--text-4xl);
+        font-weight: 600;
         color: var(--ink);
         letter-spacing: -0.01em;
         margin-bottom: 10px;
@@ -1228,7 +1284,7 @@
       }
 
       .recap-stat-value {
-        font-size: 22px;
+        font-size: var(--text-2xl);
         font-weight: 700;
         color: var(--ink);
         font-variant-numeric: tabular-nums;
@@ -1765,8 +1821,9 @@
 
       /* ===== Recording Preview ===== */
       .preview-title {
-        font-size: 17px;
-        font-weight: 700;
+        font-family: var(--font-display);
+        font-size: var(--text-lg);
+        font-weight: 600;
         color: var(--ink);
         margin: 0 0 18px;
       }
@@ -2563,7 +2620,9 @@
       }
 
       .empty-state h3 {
-        font-size: 18px;
+        font-family: var(--font-display);
+        font-size: var(--text-lg);
+        font-weight: 600;
         margin-bottom: 8px;
         color: var(--ink-soft);
       }
@@ -2650,7 +2709,9 @@
 
       .detail-body {
         flex: 1;
-        font-size: 17px;
+        font-family: var(--font-display);
+        font-size: var(--text-lg);
+        font-weight: 400;
         line-height: 1.65;
         color: var(--ink);
         margin-bottom: 0;
@@ -2867,7 +2928,7 @@
         }
 
         .content-heading {
-          font-size: 20px;
+          font-size: var(--text-xl);
         }
 
         #homeView.active {
@@ -2875,7 +2936,7 @@
         }
 
         .home-greeting {
-          font-size: 24px;
+          font-size: var(--text-2xl);
         }
 
         /* Entry detail becomes a full-screen sheet */
@@ -2909,7 +2970,7 @@
         }
 
         .header h1 {
-          font-size: 18px;
+          font-size: var(--text-lg);
         }
 
         .user-email {

@@ -8,47 +8,50 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon-192.png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <meta name="theme-color" content="#1a1a1a" />
+    <meta name="theme-color" content="#000000" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap"
+      rel="stylesheet"
+    />
     <style>
       :root {
-        /* Fixed charcoal stage: the page background is always dark here,
-           independent of the app's light/dark toggle, so cream cards and
+        /* Fixed true-black stage: the page background is always dark here,
+           independent of the app's light/dark toggle, so white cards and
            gold/teal accents read as the visual focus. */
-        --page-bg: #1a1a1a;
-        --surface: #fffdf7;
-        --ink: #2b2419;
-        --ink-soft: #736a5b;
-        --ink-faint: #a79c89;
-        --border: rgba(43, 36, 25, 0.12);
-        --gold: #d9a53a;
-        --gold-dark: #b8873a;
-        --gold-tint: #3a2f1c;
+        --page-bg: #000000;
+        --surface: #ffffff;
+        --ink: #171717;
+        --ink-soft: #5c5c5c;
+        --ink-faint: #9a9a9a;
+        --border: rgba(0, 0, 0, 0.1);
+        --gold: #d9a75a;
+        --gold-dark: #a8722a;
+        --gold-tint: #2e2412;
         --gold-tint-soft: #fbf1dd;
         --gold-accent: #cb953d;
         --gold-accent-deep: #a86a18;
         --teal: #5fa898;
-        --teal-dark: #4c7a72;
+        --teal-dark: #3f6b63;
         --teal-tint: #1f3430;
-        --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.35);
-        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.45);
+        --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.5);
+        --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.6);
 
-        /* Feature-card material: warm cream instead of pure white, so the
-           cards read as an extension of the hero rather than dropped-in UI. */
-        --card-surface: #f8f5ef;
+        /* Feature-card material: true white, so cards read as a clean
+           break against the black stage. */
+        --card-surface: #ffffff;
         --card-border: rgba(203, 149, 61, 0.18);
         --card-border-hover: #cb953d;
-        --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.08);
-        --card-shadow-hover: 0 28px 80px rgba(0, 0, 0, 0.25);
-        --card-desc: #6d655a;
+        --card-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.15);
+        --card-shadow-hover: 0 28px 80px rgba(0, 0, 0, 0.45);
+        --card-desc: #5c5c5c;
 
-        /* Text sitting directly on the charcoal background (nav, hero, footer) */
-        --on-dark-ink: #f3ede0;
-        --on-dark-soft: #b9b0a0;
-        --on-dark-faint: #8a8378;
-        --on-dark-border: rgba(243, 237, 224, 0.12);
+        /* Text sitting directly on the black background (nav, hero, footer) */
+        --on-dark-ink: #f2f2f2;
+        --on-dark-soft: #b0b0b0;
+        --on-dark-faint: #757575;
+        --on-dark-border: rgba(255, 255, 255, 0.12);
       }
 
       * {
@@ -61,8 +64,8 @@
         color: var(--on-dark-ink);
         -webkit-font-smoothing: antialiased;
         background-color: var(--page-bg);
-        background-image: radial-gradient(ellipse 120% 80% at 20% 0%, #222222 0%, transparent 55%),
-          radial-gradient(ellipse 120% 80% at 100% 100%, #141414 0%, transparent 55%);
+        background-image: radial-gradient(ellipse 120% 80% at 20% 0%, #141414 0%, transparent 55%),
+          radial-gradient(ellipse 120% 80% at 100% 100%, #0a0a0a 0%, transparent 55%);
         background-attachment: fixed;
       }
 
@@ -143,8 +146,9 @@
       }
 
       .hero h1 {
+        font-family: "Fraunces", "Figtree", serif;
         font-size: 44px;
-        font-weight: 800;
+        font-weight: 600;
         line-height: 1.15;
         margin: 0 0 18px;
         letter-spacing: -0.01em;
@@ -377,7 +381,8 @@
       }
 
       .feature-card h2 {
-        font-weight: 700;
+        font-family: "Fraunces", "Figtree", serif;
+        font-weight: 600;
         font-size: 1.55rem;
         color: var(--ink);
         margin: 0 0 10px;
@@ -399,8 +404,9 @@
       }
 
       .closing h2 {
+        font-family: "Fraunces", "Figtree", serif;
         font-size: 26px;
-        font-weight: 700;
+        font-weight: 600;
         margin: 0 0 14px;
       }
 
