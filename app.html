@@ -1735,6 +1735,47 @@
         opacity: 1;
       }
 
+      .tag-chip-filter {
+        background: none;
+        border: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .tag-chip-filter:hover {
+        text-decoration: underline;
+      }
+
+      .sidebar-tag-filter {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 6px 8px;
+        margin: 0 0 10px;
+        border-radius: 8px;
+        background: var(--teal-tint);
+        color: var(--teal-dark);
+        font-size: 12.5px;
+      }
+
+      .sidebar-tag-filter button {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 15px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        opacity: 0.7;
+      }
+
+      .sidebar-tag-filter button:hover {
+        opacity: 1;
+      }
+
       .tag-input {
         flex: 1;
         min-width: 120px;
@@ -3650,6 +3691,9 @@
 
         tags: [],
         composerTags: [],
+        tagFilter: null, // { id, name } | null - filters the sidebar history list
+
+
 
         composerMode: "idle", // idle | recording | paused | previewing
         mediaRecorder: null,
@@ -4495,7 +4539,10 @@
       async function loadEntries() {
         const requestId = ++entriesRequestSeq;
         try {
-          const response = await authFetch(CONFIG.api.endpoints.entries);
+          const url = state.tagFilter
+            ? `${CONFIG.api.endpoints.entries}?tag=${encodeURIComponent(state.tagFilter.id)}`
+            : CONFIG.api.endpoints.entries;
+          const response = await authFetch(url);
 
           if (!response.ok) throw new Error("Failed to load entries");
 
@@ -4505,11 +4552,14 @@
           const tempEntries = state.entries.filter((e) => e.isTemporary);
           state.entries = [...tempEntries, ...data.data.entries];
           renderEntries();
-          cacheEntries(data.data.entries);
+          // Only cache the unfiltered result - caching a filtered subset
+          // would make a later offline, filter-free load look like the
+          // journal only has those few entries.
+          if (!state.tagFilter) cacheEntries(data.data.entries);
         } catch (error) {
           if (requestId !== entriesRequestSeq) return;
           if (!(error instanceof SessionExpiredError)) {
-            if (isOfflineError(error)) {
+            if (isOfflineError(error) && !state.tagFilter) {
               const cached = readCachedEntries();
               if (cached) {
                 const tempEntries = state.entries.filter((e) => e.isTemporary);
@@ -4930,14 +4980,30 @@
       function renderSidebarHistory() {
         const container = document.getElementById("sidebarHistoryList");
         if (!container) return;
+
+        const filterHtml = state.tagFilter
+          ? `
+          <div class="sidebar-tag-filter">
+            <span>Filtered by: <strong>${escapeHtml(state.tagFilter.name)}</strong></span>
+            <button type="button" id="clearTagFilterBtn" aria-label="Clear tag filter">&times;</button>
+          </div>
+        `
+          : "";
+
         if (state.entries.length === 0) {
-          container.innerHTML = '<div class="sidebar-history-group-label">No entries yet</div>';
+          const emptyMessage = state.tagFilter
+            ? `No entries tagged "${escapeHtml(state.tagFilter.name)}"`
+            : "No entries yet";
+          container.innerHTML = `${filterHtml}<div class="sidebar-history-group-label">${emptyMessage}</div>`;
+          bindClearTagFilter(container);
           return;
         }
         const groups = groupEntriesByDateSemantic(state.entries);
-        container.innerHTML = groups
-          .map(
-            (group) => `
+        container.innerHTML =
+          filterHtml +
+          groups
+            .map(
+              (group) => `
           <div class="sidebar-history-group-label">${escapeHtml(group.label)}</div>
           ${group.entries
             .map((entry) => {
@@ -4955,8 +5021,9 @@
             })
             .join("")}
         `
-          )
-          .join("");
+            )
+            .join("");
+        bindClearTagFilter(container);
         container.querySelectorAll(".sidebar-history-item").forEach((item) => {
           item.addEventListener("click", () => {
             // The history list is visible from every view, so "wherever I
@@ -4998,6 +5065,21 @@
             showAlert(`Failed to delete entry: ${error.message}`, "error");
           }
         }
+      }
+
+      function bindClearTagFilter(container) {
+        const btn = container.querySelector("#clearTagFilterBtn");
+        if (btn) btn.addEventListener("click", clearTagFilter);
+      }
+
+      function applyTagFilter(tagId, tagName) {
+        state.tagFilter = { id: tagId, name: tagName };
+        loadEntries();
+      }
+
+      function clearTagFilter() {
+        state.tagFilter = null;
+        loadEntries();
       }
 
       // Right-click (desktop) or long-press (~500ms, mobile/touch) on a
@@ -5484,17 +5566,6 @@
         `;
       }
 
-      function tagsHtml(entryTags) {
-        if (!entryTags || entryTags.length === 0) return "";
-        return `
-          <div class="entry-tags">
-            ${entryTags
-              .map((t) => `<button type="button" class="tag-chip" data-tag-id="${t.id}">${escapeHtml(t.name)}</button>`)
-              .join("")}
-          </div>
-        `;
-      }
-
       function chatMessageHtml(role, content) {
         return `
           <div class="chat-message chat-message-${role}">
@@ -5529,7 +5600,7 @@
                   .map(
                     (t) => `
                   <span class="tag-chip" data-tag-id="${t.id}">
-                    ${escapeHtml(t.name)}
+                    <button type="button" class="tag-chip-filter" data-tag-id="${t.id}" data-tag-name="${escapeHtml(t.name)}">${escapeHtml(t.name)}</button>
                     <button type="button" class="tag-chip-remove" data-tag-id="${t.id}" aria-label="Remove tag">&times;</button>
                   </span>
                 `
@@ -5569,13 +5640,14 @@
               .map(
                 (t) => `
               <span class="tag-chip" data-tag-id="${t.id}">
-                ${escapeHtml(t.name)}
+                <button type="button" class="tag-chip-filter" data-tag-id="${t.id}" data-tag-name="${escapeHtml(t.name)}">${escapeHtml(t.name)}</button>
                 <button type="button" class="tag-chip-remove" data-tag-id="${t.id}" aria-label="Remove tag">&times;</button>
               </span>
             `
               )
               .join("");
             bindRemoveButtons();
+            bindFilterButtons();
             renderEntries();
           } catch (error) {
             if (!(error instanceof SessionExpiredError)) {
@@ -5599,7 +5671,22 @@
             });
           });
         }
+
+        // Clicking a tag's name (not the x) filters the sidebar history to
+        // just entries with that tag, and closes the detail view so the
+        // filtered list is immediately visible.
+        function bindFilterButtons() {
+          chipsContainer.querySelectorAll(".tag-chip-filter").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              applyTagFilter(btn.dataset.tagId, btn.dataset.tagName);
+              closeEntryDetail();
+            });
+          });
+        }
+
         bindRemoveButtons();
+        bindFilterButtons();
 
         input.addEventListener("keydown", (e) => {
           if (e.key === "Enter" || e.key === ",") {
