@@ -1189,11 +1189,16 @@
       }
 
       .home-chat {
+        display: none;
         width: 100%;
         max-width: 560px;
         margin: 20px auto 0;
         position: relative;
         z-index: 1;
+      }
+
+      .home-chat.has-messages {
+        display: block;
       }
 
       .home-chat .chat-messages {
@@ -5977,6 +5982,16 @@
         );
       }
 
+      // The reply thread box is only shown once there's actually something
+      // in it - an empty bordered box under the composer before you've
+      // typed anything is just clutter, not a second input to notice.
+      function updateHomeChatVisibility() {
+        const container = document.getElementById("homeChat");
+        const messagesEl = document.getElementById("homeReplyThread");
+        if (!container || !messagesEl) return;
+        container.classList.toggle("has-messages", messagesEl.children.length > 0);
+      }
+
       async function loadHomeReplyThread() {
         try {
           const response = await authFetch(CONFIG.api.endpoints.chat);
@@ -5988,6 +6003,7 @@
 
           messagesEl.innerHTML = data.data.messages.map(homeChatMessageHtml).join("");
           messagesEl.scrollTop = messagesEl.scrollHeight;
+          updateHomeChatVisibility();
         } catch (error) {
           if (!(error instanceof SessionExpiredError)) {
             console.error("Failed to load home reply thread:", error);
@@ -6007,6 +6023,7 @@
         if (messagesEl) {
           messagesEl.insertAdjacentHTML("beforeend", chatMessageHtml("user", content));
           messagesEl.scrollTop = messagesEl.scrollHeight;
+          updateHomeChatVisibility();
         }
 
         try {
