@@ -611,15 +611,9 @@ async function handleSignup(req, res) {
   }
 
   try {
-    const { password, timezone, age: rawAge } = req.body;
+    const { password, timezone } = req.body;
     const email = req.body.email ? req.body.email.trim().toLowerCase() : req.body.email;
     const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
-    // Optional, no validation/enforcement - just coerce to an integer or null
-    // if it's missing, blank, or not a real number.
-    const age =
-      rawAge !== null && rawAge !== undefined && rawAge !== "" && Number.isFinite(Number(rawAge))
-        ? Math.trunc(Number(rawAge))
-        : null;
 
     if (!email || !password) {
       return res.status(422).json({
@@ -685,7 +679,6 @@ async function handleSignup(req, res) {
     const user = await users.create(email, passwordHash, {
       name: name || null,
       timezone: typeof timezone === "string" && timezone.length <= 100 ? timezone : null,
-      age,
     });
     logSecurityEvent("signup_success", { userId: user.id, email, ip: getClientIp(req) });
 
@@ -700,7 +693,6 @@ async function handleSignup(req, res) {
           email: user.email,
           name: user.name,
           timezone: user.timezone,
-          age: user.age,
           onboardingCompletedAt: user.onboarding_completed_at,
           createdAt: user.created_at,
         },

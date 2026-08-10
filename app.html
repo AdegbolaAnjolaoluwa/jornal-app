@@ -1217,18 +1217,6 @@
         flex-wrap: wrap;
       }
 
-      .streak-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        font-size: 13px;
-        font-weight: 600;
-        padding: 3px 10px;
-        border-radius: 999px;
-        background: var(--sidebar-bg);
-        color: var(--ink);
-        border: 1px solid var(--border);
-      }
 
       .recap-period-toggle {
         display: inline-flex;
@@ -3149,12 +3137,11 @@
         <!-- Sign Up Form -->
         <form class="auth-form active" id="signupForm" novalidate>
           <div class="wizard-progress" id="signupWizardProgress">
-            <span class="wizard-progress-text" id="signupWizardProgressText">Step 1 of 4</span>
+            <span class="wizard-progress-text" id="signupWizardProgressText">Step 1 of 3</span>
             <div class="wizard-progress-dots">
               <span class="wizard-dot active" data-step="1"></span>
               <span class="wizard-dot" data-step="2"></span>
               <span class="wizard-dot" data-step="3"></span>
-              <span class="wizard-dot" data-step="4"></span>
             </div>
           </div>
 
@@ -3179,13 +3166,6 @@
               <label>Name</label>
               <div class="curved-input-mount" id="signupNameMount"></div>
               <div class="form-error" id="signup-name-error"></div>
-            </div>
-          </div>
-
-          <div class="wizard-step" id="signupStep4" data-step="4">
-            <div class="form-group">
-              <label>Age <span class="wizard-optional-tag">(optional)</span></label>
-              <div class="curved-input-mount" id="signupAgeMount"></div>
             </div>
           </div>
 
@@ -3433,7 +3413,6 @@
                   <div class="home-greeting" id="homeGreeting"></div>
                   <div class="home-date-row">
                     <div class="home-date" id="homeDate"></div>
-                    <div class="streak-badge" id="streakBadge" style="display: none"></div>
                   </div>
                 </div>
 
@@ -3662,7 +3641,6 @@
             actionPoints: "/api/action-points",
             tags: "/api/tags",
             export: "/api/export",
-            streak: "/api/streak",
             recap: "/api/recap",
             ask: "/api/ask",
           },
@@ -3685,8 +3663,6 @@
         currentInputType: "text",
         facts: [],
         todoActionPoints: [],
-        streak: null,
-        streakNudgeShown: false,
         recapPeriod: "week",
         isTemporaryMode: false,
         conversationReturnView: "homeView",
@@ -3773,13 +3749,13 @@
       }
 
       // ===== Auth Functions =====
-      async function handleSignup(email, password, name, age) {
+      async function handleSignup(email, password, name) {
         try {
           const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
           const response = await fetch(CONFIG.api.endpoints.signup, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password, name, timezone, age: age || null }),
+            body: JSON.stringify({ email, password, name, timezone }),
             credentials: "include",
           });
 
@@ -3809,15 +3785,14 @@
       // curved-input instance stays mounted (not destroyed) across
       // navigation so Back can restore a prior answer synchronously via
       // setValue() instead of losing it.
-      let signupWizardState = { step: 1, email: "", password: "", name: "", age: "" };
-      let signupCurvedInputs = { email: null, password: null, name: null, age: null };
+      let signupWizardState = { step: 1, email: "", password: "", name: "" };
+      let signupCurvedInputs = { email: null, password: null, name: null };
 
       function ensureCurvedInputMounted(step) {
         const configs = {
           1: { field: "email", mountId: "signupEmailMount", opts: { placeholder: "you@domain.com" } },
           2: { field: "password", mountId: "signupPasswordMount", opts: { placeholder: "••••••••", mode: "password" } },
           3: { field: "name", mountId: "signupNameMount", opts: { placeholder: "What should we call you?", maxLength: 100 } },
-          4: { field: "age", mountId: "signupAgeMount", opts: { placeholder: "Your age" } },
         };
         const config = configs[step];
         if (!config || signupCurvedInputs[config.field] || !window.initCurvedInput) return;
@@ -3839,7 +3814,7 @@
           el.classList.toggle("active", Number(el.dataset.step) === step);
         });
 
-        document.getElementById("signupWizardProgressText").textContent = `Step ${step} of 4`;
+        document.getElementById("signupWizardProgressText").textContent = `Step ${step} of 3`;
         document.querySelectorAll(".wizard-dot").forEach((dot) => {
           const dotStep = Number(dot.dataset.step);
           dot.classList.toggle("active", dotStep === step);
@@ -3847,9 +3822,9 @@
         });
 
         document.getElementById("signupWizardBackBtn").style.display = step === 1 ? "none" : "";
-        document.getElementById("signupWizardContinueBtn").textContent = step === 4 ? "Create account" : "Continue";
+        document.getElementById("signupWizardContinueBtn").textContent = step === 3 ? "Create account" : "Continue";
 
-        const fieldForStep = { 1: "email", 2: "password", 3: "name", 4: "age" }[step];
+        const fieldForStep = { 1: "email", 2: "password", 3: "name" }[step];
         const instance = signupCurvedInputs[fieldForStep];
         if (instance) {
           setTimeout(() => instance.focus(), 50);
@@ -3883,7 +3858,6 @@
         }
         // Name (step 3) has no client-side validation, matching the server
         // (only a 100-char cap, enforced by the curved-input's maxLength).
-        // Age (step 4) is optional with no validation per product decision.
         return true;
       }
 
@@ -3891,7 +3865,6 @@
         if (step === 1) signupWizardState.email = signupCurvedInputs.email.getValue().trim();
         if (step === 2) signupWizardState.password = signupCurvedInputs.password.getValue();
         if (step === 3) signupWizardState.name = signupCurvedInputs.name.getValue().trim();
-        if (step === 4) signupWizardState.age = signupCurvedInputs.age.getValue().trim();
       }
 
       async function advanceSignupWizard() {
@@ -3899,14 +3872,14 @@
         if (!validateSignupStep(step)) return;
         persistCurrentStepValue(step);
 
-        if (step < 4) {
+        if (step < 3) {
           signupWizardState.step += 1;
           renderSignupWizardStep();
         } else {
           const continueBtn = document.getElementById("signupWizardContinueBtn");
           continueBtn.disabled = true;
           try {
-            await handleSignup(signupWizardState.email, signupWizardState.password, signupWizardState.name, signupWizardState.age);
+            await handleSignup(signupWizardState.email, signupWizardState.password, signupWizardState.name);
           } finally {
             continueBtn.disabled = false;
           }
@@ -3919,15 +3892,15 @@
         signupWizardState.step -= 1;
         renderSignupWizardStep();
 
-        const fieldForStep = { 1: "email", 2: "password", 3: "name", 4: "age" }[signupWizardState.step];
+        const fieldForStep = { 1: "email", 2: "password", 3: "name" }[signupWizardState.step];
         const instance = signupCurvedInputs[fieldForStep];
         if (instance) instance.setValue(signupWizardState[fieldForStep]);
       }
 
       function resetSignupWizard() {
         Object.values(signupCurvedInputs).forEach((instance) => instance?.destroy());
-        signupCurvedInputs = { email: null, password: null, name: null, age: null };
-        signupWizardState = { step: 1, email: "", password: "", name: "", age: "" };
+        signupCurvedInputs = { email: null, password: null, name: null };
+        signupWizardState = { step: 1, email: "", password: "", name: "" };
         document.querySelectorAll("#signupForm .form-error").forEach((el) => (el.textContent = ""));
         renderSignupWizardStep();
       }
@@ -4387,11 +4360,6 @@
 
           const createData = await createResponse.json();
           const entryId = createData.data.entry.id;
-
-          // Fire-and-forget: today's entry may have just started (or
-          // extended) the streak, so refresh the badge without waiting on
-          // it - it's not on the critical path for the entry itself.
-          loadStreak();
 
           if (audioBlobToUpload) {
             try {
@@ -5292,69 +5260,6 @@
       function localDateString(date = new Date()) {
         const pad = (n) => String(n).padStart(2, "0");
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-      }
-
-      // ===== Streak =====
-      async function loadStreak() {
-        try {
-          const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-          const params = new URLSearchParams({ timezone, today: localDateString() });
-          const response = await authFetch(`${CONFIG.api.endpoints.streak}?${params}`);
-          if (!response.ok) throw new Error("Failed to load streak");
-          const data = await response.json();
-          state.streak = data.data;
-          renderStreakBadge();
-          maybeShowStreakNudge();
-        } catch (error) {
-          // Streak is a nice-to-have, not core functionality - fail silently
-          // (no toast) rather than interrupting the home view over it, same
-          // as any other non-critical background fetch.
-          if (!(error instanceof SessionExpiredError)) {
-            console.error("Failed to load streak:", error);
-          }
-        }
-      }
-
-      function renderStreakBadge() {
-        const badge = document.getElementById("streakBadge");
-        if (!badge || !state.streak) return;
-        const { current, longest } = state.streak;
-
-        if (current > 0) {
-          const day = current === 1 ? "day" : "days";
-          badge.textContent = `🔥 ${current} ${day} streak`;
-          badge.title = longest > current ? `Personal best: ${longest} days` : "";
-          badge.style.display = "";
-          return;
-        }
-
-        // No active streak right now, but a past run is still worth
-        // showing - "0 days" reads as a failure with nothing to hold onto,
-        // "personal best" gives something encouraging instead of hiding the
-        // badge entirely right when a break might feel discouraging.
-        if (longest > 0) {
-          const day = longest === 1 ? "day" : "days";
-          badge.textContent = `🏅 Best: ${longest} ${day}`;
-          badge.title = "Start a new streak today";
-          badge.style.display = "";
-          return;
-        }
-
-        badge.style.display = "none";
-      }
-
-      // Nudges once per page load (not once per home-view visit, which could
-      // otherwise fire repeatedly as someone navigates back and forth) - only
-      // in the evening, only if there's an active streak that would actually
-      // be lost, and only if nothing's been written yet today.
-      function maybeShowStreakNudge() {
-        if (state.streakNudgeShown || !state.streak) return;
-        if (state.streak.wroteToday || state.streak.current <= 0) return;
-        if (new Date().getHours() < 20) return;
-
-        state.streakNudgeShown = true;
-        const day = state.streak.current === 1 ? "day" : "days";
-        showToast(`Don't lose your ${state.streak.current}-${day} streak, write something today`, "warning");
       }
 
       async function updateActionPoint(entryId, apId, fields) {
@@ -6536,12 +6441,6 @@
             day: "numeric",
           });
         }
-        if (state.streak) {
-          // Already have a value from earlier this session - show it
-          // immediately rather than a flash of "no badge" while re-fetching.
-          renderStreakBadge();
-        }
-        loadStreak();
       }
 
       function switchAuthTab(tabType) {
