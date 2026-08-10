@@ -14,6 +14,7 @@
     { "source": "/api/entries/:id/tags", "destination": "/api/entries" },
     { "source": "/api/entries/:id", "destination": "/api/entries" },
     { "source": "/api/ask/:id/messages", "destination": "/api/ask" },
+    { "source": "/api/chat/messages", "destination": "/api/chat" },
     { "source": "/api/auth/delete-account", "destination": "/api/auth" },
     { "source": "/api/auth/login", "destination": "/api/auth" },
     { "source": "/api/auth/logout", "destination": "/api/auth" },
