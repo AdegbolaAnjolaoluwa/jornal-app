@@ -1435,6 +1435,31 @@
         line-height: 1.5;
       }
 
+      .settings-card-danger {
+        border: 1px solid var(--error-tint-border);
+      }
+
+      .btn-danger {
+        padding: 12px 22px;
+        background: var(--error);
+        color: #fff;
+        border-radius: 11px;
+        border: none;
+        font-family: inherit;
+        font-size: 14.5px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .btn-danger:hover:not(:disabled) {
+        filter: brightness(1.05);
+      }
+
+      .btn-danger:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
       /* ===== Entry Composer ===== */
       .entry-form {
         background: var(--surface);
@@ -3537,9 +3562,37 @@
                   <button type="button" class="btn-secondary" id="exportDataBtn">Export as JSON</button>
                 </div>
               </div>
+
+              <div class="settings-card settings-card-danger">
+                <div class="settings-section-label">Danger Zone</div>
+                <p class="settings-hint">
+                  Permanently delete your account and everything in it, entries, action points, tags, and facts.
+                  This cannot be undone.
+                </p>
+                <button type="button" class="btn-danger" id="deleteAccountBtn">Delete my account</button>
+              </div>
             </div>
           </div>
         </main>
+      </div>
+    </div>
+
+    <div class="detail-overlay" id="deleteAccountOverlay">
+      <div class="detail-card" id="deleteAccountCard">
+        <button class="detail-close" id="deleteAccountCloseBtn">&times;</button>
+        <h3 class="preview-title">Delete your account</h3>
+        <p class="settings-hint">
+          This permanently deletes your account and every entry, action point, tag, and fact tied to it. This
+          cannot be undone. Type <strong>delete my account</strong> below to confirm.
+        </p>
+        <div class="form-group">
+          <input type="text" id="deleteAccountConfirmInput" autocomplete="off" placeholder="delete my account" />
+        </div>
+        <div id="deleteAccountError" class="form-error"></div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="deleteAccountCancelBtn">Cancel</button>
+          <button type="button" class="btn-danger" id="deleteAccountConfirmBtn" disabled>Delete my account</button>
+        </div>
       </div>
     </div>
 
@@ -3555,6 +3608,7 @@
             me: "/api/auth/me",
             profile: "/api/auth/profile",
             picture: "/api/auth/picture",
+            deleteAccount: "/api/auth/delete-account",
             requestPasswordReset: "/api/auth/password-reset",
             resetPassword: "/api/auth/password-reset",
             entries: "/api/entries",
@@ -6830,6 +6884,56 @@
           } finally {
             btn.disabled = false;
             btn.textContent = "Export as JSON";
+          }
+        });
+
+        // Delete account: type-to-confirm modal, not a plain confirm() -
+        // this cascades every entry/fact/tag/recap and can't be undone, so
+        // it gets a stronger confirmation than the single-entry delete does.
+        const DELETE_ACCOUNT_CONFIRM_PHRASE = "delete my account";
+        document.getElementById("deleteAccountBtn").addEventListener("click", () => {
+          document.getElementById("deleteAccountConfirmInput").value = "";
+          document.getElementById("deleteAccountConfirmBtn").disabled = true;
+          document.getElementById("deleteAccountError").textContent = "";
+          document.getElementById("deleteAccountOverlay").classList.add("active");
+          document.getElementById("deleteAccountConfirmInput").focus();
+        });
+
+        function closeDeleteAccountModal() {
+          document.getElementById("deleteAccountOverlay").classList.remove("active");
+        }
+
+        document.getElementById("deleteAccountCloseBtn").addEventListener("click", closeDeleteAccountModal);
+        document.getElementById("deleteAccountCancelBtn").addEventListener("click", closeDeleteAccountModal);
+        document.getElementById("deleteAccountOverlay").addEventListener("click", (e) => {
+          if (e.target.id === "deleteAccountOverlay") closeDeleteAccountModal();
+        });
+
+        document.getElementById("deleteAccountConfirmInput").addEventListener("input", (e) => {
+          document.getElementById("deleteAccountConfirmBtn").disabled =
+            e.target.value.trim().toLowerCase() !== DELETE_ACCOUNT_CONFIRM_PHRASE;
+        });
+
+        document.getElementById("deleteAccountConfirmBtn").addEventListener("click", async () => {
+          const btn = document.getElementById("deleteAccountConfirmBtn");
+          const errorEl = document.getElementById("deleteAccountError");
+          btn.disabled = true;
+          btn.textContent = "Deleting…";
+          errorEl.textContent = "";
+          try {
+            const response = await authFetch(CONFIG.api.endpoints.deleteAccount, { method: "DELETE" });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+              throw new Error(data.error?.message || "Failed to delete account");
+            }
+            closeDeleteAccountModal();
+            await handleLogout();
+          } catch (error) {
+            if (!(error instanceof SessionExpiredError)) {
+              errorEl.textContent = error.message;
+              btn.disabled = false;
+              btn.textContent = "Delete my account";
+            }
           }
         });
 

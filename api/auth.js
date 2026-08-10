@@ -6,6 +6,7 @@
  * POST   /api/auth/picture        - Upload the current user's profile picture (requires authentication)
  * PATCH  /api/auth/profile        - Update the current user's name/nickname, or mark onboarding complete (requires authentication)
  * POST   /api/auth/signup         - Create a new user account
+ * DELETE /api/auth/delete-account - Permanently delete the current user's account and all their data (requires authentication)
  *
  * All auth routes are kept in this one file (dispatched by path below, via
  * the rewrites in vercel.json) rather than one file per route, to stay under
@@ -64,6 +65,8 @@ export default async function handler(req, res) {
       return handleProfile(req, res);
     case "signup":
       return handleSignup(req, res);
+    case "delete-account":
+      return handleDeleteAccount(req, res);
     default:
       return res.status(404).json({ success: false, error: { message: "Not found" } });
   }
@@ -156,6 +159,52 @@ async function handleLogout(req, res) {
       message: "Logged out successfully",
     },
   });
+}
+
+async function handleDeleteAccount(req, res) {
+  if (req.method !== "DELETE") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    const userId = await requireAuth(req);
+
+    const deleted = await users.delete(userId);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: { message: "Account not found" } });
+    }
+
+    // Every user_id-owned table cascades from users at the DB level (see
+    // initializeSchema in lib/db.js), so this single DELETE already removed
+    // every entry, action point, fact, tag, recap, and ask thread. The cache
+    // invalidation below just makes sure *this* warm container stops serving
+    // a stale (now-nonexistent) token_version to a request that's already
+    // in flight - requireAuth would reject it anyway once the cache expires,
+    // this just closes that window immediately.
+    invalidateTokenVersionCache(userId);
+
+    logSecurityEvent("account_deleted", { userId });
+
+    res.setHeader("Set-Cookie", clearCookieHeader());
+
+    return res.status(200).json({
+      success: true,
+      data: { message: "Account deleted" },
+    });
+  } catch (err) {
+    if (err.status === 401) {
+      return res.status(401).json({
+        success: false,
+        error: { message: err.message },
+      });
+    }
+
+    console.error("Delete account error:", err);
+    return res.status(500).json({
+      success: false,
+      error: { message: "Failed to delete account" },
+    });
+  }
 }
 
 async function handleMe(req, res) {
