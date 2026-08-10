@@ -33,6 +33,15 @@ import { enforceRateLimit, enforceRateLimits, getClientIp } from "../lib/rateLim
 import { isValidImage } from "../lib/fileSignature.js";
 import url from "url";
 
+// A fixed, pre-computed bcrypt hash of an arbitrary string that is not - and
+// never was - any real user's password. Used only to give the "no such
+// account" login path the same bcrypt-compare cost as the "wrong password"
+// path, so response timing doesn't reveal whether an email is registered
+// (SEC-001). Deliberately not derived from anything real, and never written
+// to the database - it exists purely to burn CPU time equivalent to a real
+// comparePassword() call.
+const DUMMY_PASSWORD_HASH = "$2a$10$x3F4AAS7URso/ek.K6glXuk/BEv2U3kkGtk39crtopSMgObyAteHa";
+
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const MAX_PICTURE_UPLOAD_BYTES = 1.5 * 1024 * 1024;
 const ALLOWED_PICTURE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -105,17 +114,18 @@ async function handleLogin(req, res) {
     }
 
     const user = await users.findByEmail(email);
-    if (!user) {
-      logSecurityEvent("login_failed", { email, ip: clientIp, reason: "no_such_account" });
-      return res.status(401).json({
-        success: false,
-        error: { message: "Invalid email or password" },
-      });
-    }
+    // Always run a bcrypt compare, real or dummy, before branching - doing
+    // this only on the "user exists" path would let response timing reveal
+    // whether an email is registered (SEC-001).
+    const passwordMatch = await comparePassword(password, user ? user.password_hash : DUMMY_PASSWORD_HASH);
 
-    const passwordMatch = await comparePassword(password, user.password_hash);
-    if (!passwordMatch) {
-      logSecurityEvent("login_failed", { email, ip: clientIp, userId: user.id, reason: "bad_password" });
+    if (!user || !passwordMatch) {
+      logSecurityEvent("login_failed", {
+        email,
+        ip: clientIp,
+        userId: user?.id,
+        reason: user ? "bad_password" : "no_such_account",
+      });
       return res.status(401).json({
         success: false,
         error: { message: "Invalid email or password" },
@@ -168,6 +178,29 @@ async function handleDeleteAccount(req, res) {
 
   try {
     const userId = await requireAuth(req);
+
+    // Step-up confirmation: deleting an account is irreversible and
+    // cascades everything, so it requires the current password regardless
+    // of session type - a stolen long-lived "remember me" cookie alone
+    // isn't enough to do this (SEC-004). Same generic failure message
+    // whichever way it fails, so this can't be used to probe anything about
+    // the account.
+    const { password } = req.body || {};
+    if (!password) {
+      return res.status(422).json({
+        success: false,
+        error: { message: "Password is required to delete your account" },
+      });
+    }
+    const record = await users.getPasswordHash(userId);
+    const passwordMatch = record && (await comparePassword(password, record.password_hash));
+    if (!passwordMatch) {
+      logSecurityEvent("account_delete_failed", { userId, reason: "bad_password" });
+      return res.status(401).json({
+        success: false,
+        error: { message: "Incorrect password" },
+      });
+    }
 
     const deleted = await users.delete(userId);
     if (!deleted) {
@@ -321,6 +354,13 @@ async function handlePasswordResetRequest(req, res) {
       if (process.env.NODE_ENV !== "production") {
         devResetUrl = resetUrl;
       }
+    } else {
+      // Do the same shape of work (token generation + one DB round-trip) as
+      // the "user exists" branch above, so response timing doesn't reveal
+      // whether this email is registered (SEC-002). Creates no real token
+      // and writes nothing.
+      generateResetToken();
+      await users.dummyResetTokenWork();
     }
 
     return res.status(200).json({

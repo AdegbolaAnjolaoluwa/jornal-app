@@ -9,10 +9,25 @@
 import { actionPoints as apTable } from "../../lib/db.js";
 import { sendReminderEmail } from "../../lib/email.js";
 import { pruneRateLimits } from "../../lib/rateLimit.js";
+import { timingSafeEqualStrings } from "../../lib/timingSafeEqual.js";
 
 export default async function handler(req, res) {
+  // Fail closed if CRON_SECRET isn't configured, rather than letting the
+  // comparison below silently become `Bearer undefined` (guessable by
+  // anyone) - this route deliberately doesn't import lib/auth.js (it needs
+  // no session/JWT logic and shouldn't pay that module's validateConfig()
+  // cold-start cost for secrets it doesn't use), so it isn't covered by
+  // that module's fail-fast check.
+  if (!process.env.CRON_SECRET) {
+    console.error("CRON_SECRET is not configured");
+    return res.status(500).json({
+      success: false,
+      error: { message: "Misconfigured" },
+    });
+  }
+
   const authHeader = req.headers.authorization || "";
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!timingSafeEqualStrings(authHeader, `Bearer ${process.env.CRON_SECRET}`)) {
     return res.status(401).json({
       success: false,
       error: { message: "Unauthorized" },

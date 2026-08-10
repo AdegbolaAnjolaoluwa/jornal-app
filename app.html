@@ -3629,6 +3629,10 @@
         <div class="form-group">
           <input type="text" id="deleteAccountConfirmInput" autocomplete="off" placeholder="delete my account" />
         </div>
+        <div class="form-group">
+          <label for="deleteAccountPasswordInput">Current password</label>
+          <input type="password" id="deleteAccountPasswordInput" autocomplete="current-password" placeholder="Your password" />
+        </div>
         <div id="deleteAccountError" class="form-error"></div>
         <div class="form-actions">
           <button type="button" class="btn-cancel" id="deleteAccountCancelBtn">Cancel</button>
@@ -6978,8 +6982,17 @@
         // this cascades every entry/fact/tag/recap and can't be undone, so
         // it gets a stronger confirmation than the single-entry delete does.
         const DELETE_ACCOUNT_CONFIRM_PHRASE = "delete my account";
+        function updateDeleteAccountBtnState() {
+          const phraseOk =
+            document.getElementById("deleteAccountConfirmInput").value.trim().toLowerCase() ===
+            DELETE_ACCOUNT_CONFIRM_PHRASE;
+          const passwordOk = document.getElementById("deleteAccountPasswordInput").value.length > 0;
+          document.getElementById("deleteAccountConfirmBtn").disabled = !(phraseOk && passwordOk);
+        }
+
         document.getElementById("deleteAccountBtn").addEventListener("click", () => {
           document.getElementById("deleteAccountConfirmInput").value = "";
+          document.getElementById("deleteAccountPasswordInput").value = "";
           document.getElementById("deleteAccountConfirmBtn").disabled = true;
           document.getElementById("deleteAccountError").textContent = "";
           document.getElementById("deleteAccountOverlay").classList.add("active");
@@ -6996,19 +7009,22 @@
           if (e.target.id === "deleteAccountOverlay") closeDeleteAccountModal();
         });
 
-        document.getElementById("deleteAccountConfirmInput").addEventListener("input", (e) => {
-          document.getElementById("deleteAccountConfirmBtn").disabled =
-            e.target.value.trim().toLowerCase() !== DELETE_ACCOUNT_CONFIRM_PHRASE;
-        });
+        document.getElementById("deleteAccountConfirmInput").addEventListener("input", updateDeleteAccountBtnState);
+        document.getElementById("deleteAccountPasswordInput").addEventListener("input", updateDeleteAccountBtnState);
 
         document.getElementById("deleteAccountConfirmBtn").addEventListener("click", async () => {
           const btn = document.getElementById("deleteAccountConfirmBtn");
           const errorEl = document.getElementById("deleteAccountError");
+          const password = document.getElementById("deleteAccountPasswordInput").value;
           btn.disabled = true;
           btn.textContent = "Deleting…";
           errorEl.textContent = "";
           try {
-            const response = await authFetch(CONFIG.api.endpoints.deleteAccount, { method: "DELETE" });
+            const response = await authFetch(CONFIG.api.endpoints.deleteAccount, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ password }),
+            });
             const data = await response.json();
             if (!response.ok || !data.success) {
               throw new Error(data.error?.message || "Failed to delete account");
