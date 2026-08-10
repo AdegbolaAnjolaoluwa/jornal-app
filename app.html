@@ -3490,18 +3490,16 @@
               </div>
               </div>
 
-              <!-- Home Chat: an ongoing, casual conversation alongside the
-                   composer above - not another way to write a formal entry,
-                   though a message can still quietly become one if it turns
-                   out to be journal-worthy (see the "saved to your journal"
-                   marker on a bubble). -->
+              <!-- Home Reply Thread: the composer above is the single input -
+                   typed text goes through the AI's chat-vs-entry judgment
+                   (POST /api/chat/messages), and the reply (whether it's a
+                   warm conversational response or a "saved to your journal"
+                   notice) appears here, inline, without navigating away.
+                   Voice recordings and Temporary chat mode bypass this
+                   entirely and keep their own existing behavior. -->
               <div class="home-chat" id="homeChat">
                 <div class="chat-thread">
-                  <div class="chat-messages" id="homeChatMessages"></div>
-                  <form class="chat-input-row" id="homeChatForm">
-                    <input type="text" id="homeChatInput" placeholder="Or just talk to me..." autocomplete="off" />
-                    <button type="submit" class="chat-send-btn">Send</button>
-                  </form>
+                  <div class="chat-messages" id="homeReplyThread"></div>
                 </div>
               </div>
 
@@ -4316,7 +4314,16 @@
 
       // ===== Entry Functions =====
       async function submitEntry(inputType, inputText) {
-        if (inputType === undefined) {
+        // Only a bare composer submission (no args - typed directly into
+        // #textInput and sent) goes through the AI's chat-vs-entry judgment
+        // below. A call from handleSendMode() always passes explicit args,
+        // even for its "Text only" option (inputType "text" there too) -
+        // that's someone who recorded and deliberately reviewed a
+        // transcript before sending, a stronger intent signal than typing a
+        // quick line, so it keeps the unconditional "always a real entry"
+        // behavior same as voice.
+        const isBareComposerSubmission = inputType === undefined;
+        if (isBareComposerSubmission) {
           inputType = "text";
           inputText = document.getElementById("textInput").value.trim();
         }
@@ -4381,6 +4388,13 @@
               openEntryDetail(tempEntry.id);
             }
           }
+          return;
+        }
+
+        if (isBareComposerSubmission) {
+          const content = inputText;
+          clearForm();
+          await sendHomeReply(content);
           return;
         }
 
@@ -5963,34 +5977,37 @@
         );
       }
 
-      async function loadHomeChat() {
+      async function loadHomeReplyThread() {
         try {
           const response = await authFetch(CONFIG.api.endpoints.chat);
           if (!response.ok) throw new Error("Failed to load chat");
 
           const data = await response.json();
-          const messagesEl = document.getElementById("homeChatMessages");
+          const messagesEl = document.getElementById("homeReplyThread");
           if (!messagesEl) return;
 
           messagesEl.innerHTML = data.data.messages.map(homeChatMessageHtml).join("");
           messagesEl.scrollTop = messagesEl.scrollHeight;
         } catch (error) {
           if (!(error instanceof SessionExpiredError)) {
-            console.error("Failed to load home chat:", error);
+            console.error("Failed to load home reply thread:", error);
           }
         }
       }
 
-      async function sendHomeChatMessage() {
-        const input = document.getElementById("homeChatInput");
-        const content = input.value.trim();
-        if (!content) return;
-
-        const messagesEl = document.getElementById("homeChatMessages");
-        messagesEl.insertAdjacentHTML("beforeend", chatMessageHtml("user", content));
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-        input.value = "";
-        input.disabled = true;
+      // Called from submitEntry() for a typed, non-temporary text
+      // submission - the AI decides (server-side, same judgment already
+      // verified live) whether this becomes a real journal entry or just a
+      // conversational reply, and either way the response appears inline
+      // here rather than navigating away from home. Voice recordings and
+      // Temporary chat mode never call this - they keep their own existing
+      // /api/entries + openEntryDetail behavior untouched.
+      async function sendHomeReply(content) {
+        const messagesEl = document.getElementById("homeReplyThread");
+        if (messagesEl) {
+          messagesEl.insertAdjacentHTML("beforeend", chatMessageHtml("user", content));
+          messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
 
         try {
           const response = await authFetch(`${CONFIG.api.endpoints.chat}/messages`, {
@@ -6002,36 +6019,26 @@
           if (!response.ok) throw new Error("Failed to send message");
 
           const data = await response.json();
-          if (data.data.createdEntryId) {
-            // Re-render the just-sent user bubble with the marker rather
-            // than appending a duplicate - the optimistic bubble above
-            // doesn't know yet whether this turned into an entry.
-            const bubbles = messagesEl.querySelectorAll(".chat-message-user");
-            const lastUserBubble = bubbles[bubbles.length - 1];
-            if (lastUserBubble) {
-              lastUserBubble.outerHTML = homeChatMessageHtml(data.data.userMessage);
+          if (messagesEl) {
+            if (data.data.createdEntryId) {
+              // Re-render the just-sent user bubble with the marker rather
+              // than appending a duplicate - the optimistic bubble above
+              // doesn't know yet whether this turned into an entry.
+              const bubbles = messagesEl.querySelectorAll(".chat-message-user");
+              const lastUserBubble = bubbles[bubbles.length - 1];
+              if (lastUserBubble) {
+                lastUserBubble.outerHTML = homeChatMessageHtml(data.data.userMessage);
+              }
+              loadEntries();
             }
-            loadEntries();
+            messagesEl.insertAdjacentHTML("beforeend", chatMessageHtml("assistant", data.data.assistantMessage.content));
+            messagesEl.scrollTop = messagesEl.scrollHeight;
           }
-          messagesEl.insertAdjacentHTML("beforeend", chatMessageHtml("assistant", data.data.assistantMessage.content));
-          messagesEl.scrollTop = messagesEl.scrollHeight;
         } catch (error) {
           if (!(error instanceof SessionExpiredError)) {
             showToast(`Failed to send message: ${error.message}`, "error");
           }
-        } finally {
-          input.disabled = false;
-          input.focus();
         }
-      }
-
-      function bindHomeChatForm() {
-        const form = document.getElementById("homeChatForm");
-        if (!form) return;
-        form.addEventListener("submit", (e) => {
-          e.preventDefault();
-          sendHomeChatMessage();
-        });
       }
 
       // ===== Voice Functions =====
@@ -6563,7 +6570,7 @@
             day: "numeric",
           });
         }
-        loadHomeChat();
+        loadHomeReplyThread();
       }
 
       function switchAuthTab(tabType) {
@@ -6802,9 +6809,6 @@
 
         // Ask form - static markup, bound once
         bindAskForm();
-
-        // Home chat form - static markup, bound once
-        bindHomeChatForm();
 
         // Form actions (plain-text path)
         document.getElementById("submitBtn").addEventListener("click", () => submitEntry());
