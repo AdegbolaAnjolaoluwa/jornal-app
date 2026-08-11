@@ -154,6 +154,41 @@
         letter-spacing: -0.01em;
       }
 
+      /* Particle-formation effect (see particle-text.js) - the h1 itself
+         holds no visible text node, only the canvas the effect draws into
+         plus a screen-reader-only span carrying the real heading text, so
+         accessibility/SEO/no-JS all still see the actual words. */
+      .particle-text {
+        position: relative;
+        display: block;
+        width: 100%;
+        height: 1.35em;
+        min-height: 64px;
+        overflow: hidden;
+        touch-action: none;
+        isolation: isolate;
+      }
+
+      .particle-text__canvas {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .particle-text__sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
       .hero p {
         font-size: 18px;
         line-height: 1.6;
@@ -503,7 +538,9 @@
 
     <section class="hero">
       <div class="hero-eyebrow">Welcome to Say So</div>
-      <h1>A private space to think out loud</h1>
+      <h1 class="particle-text" id="heroParticleText" aria-label="A private space to think out loud">
+        <span class="particle-text__sr">A private space to think out loud</span>
+      </h1>
       <p>
         Speak or type whatever's on your mind. Say So reflects it back, quietly pulls out the action points, and
         keeps every entry yours alone.
@@ -747,6 +784,29 @@
           opacity: 1.0,
         });
       }
+    </script>
+    <script type="module">
+      import { initParticleText } from "/particle-text.js";
+
+      // trigger: "mount" forms the headline once automatically on load, no
+      // hover needed - visible to every visitor including mobile, where
+      // hover doesn't exist. Colors match the app's own near-white ink and
+      // gold accent tokens rather than the component's demo purple.
+      // ParticleText handles prefers-reduced-motion internally (forms the
+      // text without animating it), so this isn't gated the way
+      // initSideRays above is - the heading still needs to appear either way.
+      initParticleText(document.getElementById("heroParticleText"), {
+        text: "A private space to think out loud",
+        color: "#f2f2f2",
+        highlightColor: "#d9a75a",
+        trigger: "mount",
+        fontFamily: '"Fraunces", "Figtree", serif',
+        fontWeight: 600,
+        fontSize: "inherit",
+        particleSize: 2,
+        density: 3,
+        glow: false,
+      });
     </script>
   </body>
 </html>
