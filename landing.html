@@ -497,6 +497,33 @@
         .demo-card {
           margin-top: 40px;
         }
+
+        /* The particle effect is hard to read at small sizes, so mobile
+           just gets the plain, normal headline text instead - the
+           screen-reader-only span becomes the real visible heading, and
+           any canvas the effect already drew gets hidden. particle-text.js
+           itself also skips initializing below this width (see the
+           landing page's own script), so this is belt-and-suspenders for
+           anyone who resizes into this range after the effect already ran. */
+        .particle-text {
+          height: auto;
+          min-height: 0;
+          overflow: visible;
+        }
+
+        .particle-text__sr {
+          position: static;
+          width: auto;
+          height: auto;
+          margin: 0;
+          padding: 0;
+          clip: auto;
+          white-space: normal;
+        }
+
+        .particle-text__canvas {
+          display: none;
+        }
       }
 
       @media (max-width: 540px) {
@@ -789,24 +816,30 @@
       import { initParticleText } from "/particle-text.js";
 
       // trigger: "mount" forms the headline once automatically on load, no
-      // hover needed - visible to every visitor including mobile, where
-      // hover doesn't exist. Colors match the app's own near-white ink and
-      // gold accent tokens rather than the component's demo purple.
+      // hover needed. Colors match the app's own near-white ink and gold
+      // accent tokens rather than the component's demo purple.
       // ParticleText handles prefers-reduced-motion internally (forms the
       // text without animating it), so this isn't gated the way
       // initSideRays above is - the heading still needs to appear either way.
-      initParticleText(document.getElementById("heroParticleText"), {
-        text: "A private space to think out loud",
-        color: "#f2f2f2",
-        highlightColor: "#d9a75a",
-        trigger: "mount",
-        fontFamily: '"Fraunces", "Figtree", serif',
-        fontWeight: 600,
-        fontSize: "inherit",
-        particleSize: 2,
-        density: 3,
-        glow: false,
-      });
+      //
+      // Desktop/laptop only: the effect reads as illegible noise at small
+      // sizes, so screens at or below the app's existing 860px mobile
+      // breakpoint just get the plain, normal headline text instead (see
+      // the matching @media block in this page's <style>).
+      if (!window.matchMedia("(max-width: 860px)").matches) {
+        initParticleText(document.getElementById("heroParticleText"), {
+          text: "A private space to think out loud",
+          color: "#f2f2f2",
+          highlightColor: "#d9a75a",
+          trigger: "mount",
+          fontFamily: '"Fraunces", "Figtree", serif',
+          fontWeight: 600,
+          fontSize: "inherit",
+          particleSize: 2,
+          density: 3,
+          glow: false,
+        });
+      }
     </script>
   </body>
 </html>
