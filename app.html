@@ -1191,8 +1191,7 @@
       .home-chat {
         display: none;
         width: 100%;
-        max-width: 560px;
-        margin: 0 auto 20px;
+        margin: 0 0 20px;
         position: relative;
         z-index: 1;
       }
@@ -1201,12 +1200,14 @@
         display: block;
       }
 
-      /* Taller and scrolled-to-bottom (see loadHomeReplyThread/sendHomeReply
-         in js/chat.js) so the newest message sits directly above the
-         composer, chat-app style, instead of the conversation growing away
-         from a fixed input above it. */
+      /* No box/scroll clipping - the conversation uses the same open page
+         space as the rest of the app instead of being trapped in a small
+         bordered, scrollable pane. Scrolled-to-bottom on new messages (see
+         loadHomeReplyThread/sendHomeReply in js/chat.js) still keeps the
+         newest message closest to the composer. */
       .home-chat .chat-messages {
-        max-height: 55vh;
+        max-height: none;
+        overflow-y: visible;
       }
 
       .chat-bubble-entry-marker {
@@ -1221,7 +1222,6 @@
       .home-welcome {
         position: relative;
         z-index: 1;
-        text-align: center;
         margin-bottom: 32px;
       }
 
@@ -1231,20 +1231,21 @@
         font-weight: 600;
         color: var(--ink);
         letter-spacing: -0.01em;
-        margin-bottom: 10px;
+        text-align: center;
       }
 
       .home-date {
-        font-size: 15px;
-        color: var(--ink-soft);
+        font-size: 12px;
+        color: var(--ink-faint);
       }
 
       .home-date-row {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-end;
         gap: 10px;
         flex-wrap: wrap;
+        margin-top: 4px;
       }
 
 
@@ -2609,10 +2610,7 @@
 
       /* ===== Clarifying Question Chat ===== */
       .chat-thread {
-        background: var(--surface-warm);
-        border: 1px solid var(--border-input);
-        border-radius: 10px;
-        padding: 16px;
+        padding: 0;
       }
 
       .chat-messages {
@@ -2646,14 +2644,15 @@
       }
 
       .chat-message-assistant .chat-bubble {
-        background: var(--teal-tint);
+        background: var(--sidebar-bg);
+        border: 1px solid var(--border);
         color: var(--ink);
         border-bottom-left-radius: 4px;
       }
 
       .chat-message-user .chat-bubble {
-        background: var(--gold);
-        color: #fff;
+        background: var(--ink);
+        color: var(--paper);
         border-bottom-right-radius: 4px;
       }
 
