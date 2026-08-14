@@ -103,11 +103,21 @@ export function homeChatMessageHtml(message) {
 // The reply thread box is only shown once there's actually something
 // in it - an empty bordered box under the composer before you've
 // typed anything is just clutter, not a second input to notice.
+//
+// The composer's placeholder also switches once a conversation is
+// underway - "What's on your mind tonight?" is an opener for a blank
+// page, not a fitting prompt once there's already a reply sitting right
+// above the input.
 export function updateHomeChatVisibility() {
   const container = document.getElementById("homeChat");
   const messagesEl = document.getElementById("homeReplyThread");
+  const textInput = document.getElementById("textInput");
   if (!container || !messagesEl) return;
-  container.classList.toggle("has-messages", messagesEl.children.length > 0);
+  const hasMessages = messagesEl.children.length > 0;
+  container.classList.toggle("has-messages", hasMessages);
+  if (textInput) {
+    textInput.placeholder = hasMessages ? "Reply..." : "What's on your mind tonight?";
+  }
 }
 
 export async function loadHomeReplyThread() {

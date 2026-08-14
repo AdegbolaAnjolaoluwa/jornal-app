@@ -1147,17 +1147,28 @@
       }
 
       /* ===== Home View: always a fresh start ===== */
+      /* A real height (not min-height) caps the view at the visible
+         viewport, so .home-content below can make the chat messages area
+         the thing that scrolls internally, keeping the composer reachable
+         without ever scrolling the page itself. */
       #homeView.active {
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        min-height: calc(100vh - 65px - 72px);
+        height: calc(100vh - 65px - 72px);
       }
 
       .home-content {
         position: relative;
         width: 100%;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1;
+        /* Centers the greeting+composer as a group when there's no
+           conversation yet (short content) - once a conversation exists,
+           .home-chat's flex: 1 below takes over the extra space instead. */
+        justify-content: center;
       }
 
       /* Anchored to .main-content (the full sidebar-to-edge column), not the
@@ -1182,8 +1193,14 @@
         opacity: 0.8;
       }
 
+      /* Sits at the bottom of .home-content's flex column by ordinary flex
+         flow (not position: sticky - that needs a scrolling ancestor,
+         which .home-content isn't) - reachable without scrolling the page,
+         no matter how long the conversation above it grows, because
+         .home-chat .chat-messages below is what scrolls instead. */
       #homeView .entry-form {
         width: 100%;
+        flex-shrink: 0;
         position: relative;
         z-index: 1;
       }
@@ -1194,20 +1211,32 @@
         margin: 0 0 20px;
         position: relative;
         z-index: 1;
+        min-height: 0;
       }
 
       .home-chat.has-messages {
-        display: block;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
       }
 
-      /* No box/scroll clipping - the conversation uses the same open page
-         space as the rest of the app instead of being trapped in a small
-         bordered, scrollable pane. Scrolled-to-bottom on new messages (see
-         loadHomeReplyThread/sendHomeReply in js/chat.js) still keeps the
-         newest message closest to the composer. */
+      .home-chat .chat-thread {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        flex: 1;
+      }
+
+      /* No box/border around the conversation (unboxed look), but still its
+         own scroll region - this is what keeps the composer below reachable
+         without the page itself ever needing to scroll to reach it.
+         Scrolled-to-bottom on new messages (see
+         loadHomeReplyThread/sendHomeReply in js/chat.js) keeps the newest
+         message closest to the composer. */
       .home-chat .chat-messages {
-        max-height: none;
-        overflow-y: visible;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
       }
 
       .chat-bubble-entry-marker {
